@@ -84,11 +84,11 @@ def update_video():
     app.after(10, update_video)
 
 def update_map():
-    map_canvas.delete("all")
+    campo.delete("all")
 
-    canvas_w = map_canvas.winfo_width()
-    canvas_h = map_canvas.winfo_height()
-    cam_w, cam_h = 640, 480
+    x_campo = campo.winfo_width()
+    y_campo = campo.winfo_height()
+    cam_x, cam_y = 640, 480
 
     for tag_id, coords in coordenadas.items():
         color = get_color(tag_id)
@@ -97,12 +97,12 @@ def update_map():
             x1, y1 = coords[i - 1]
             x2, y2 = coords[i]
 
-            x1 = int(x1 / cam_w * canvas_w)
-            y1 = int(y1 / cam_h * canvas_h)
-            x2 = int(x2 / cam_w * canvas_w)
-            y2 = int(y2 / cam_h * canvas_h)
+            x1 = int(x1 / cam_x * x_campo)
+            y1 = int(y1 / cam_y * y_campo)
+            x2 = int(x2 / cam_x * x_campo)
+            y2 = int(y2 / cam_y * y_campo)
 
-            map_canvas.create_line(x1, y1, x2, y2, fill=color, width=2)
+            campo.create_line(x1, y1, x2, y2, fill=color, width=2)
 
 def grabar_video():
     global grabando
@@ -148,8 +148,8 @@ app.grid_columnconfigure((0, 1, 2), weight=1)
 video_canvas = customtkinter.CTkCanvas(app, bg="black", width=640, height=480)
 video_canvas.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=10, pady=10)
 
-map_canvas = customtkinter.CTkCanvas(app, width=640, height=480, bg="white")
-map_canvas.grid(row=1, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
+campo = customtkinter.CTkCanvas(app, width=640, height=480, bg="white")
+campo.grid(row=1, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
 
 
 '''
