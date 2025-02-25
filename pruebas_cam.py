@@ -15,15 +15,14 @@ detector = apriltag.Detector(families="tag36h11", quad_decimate=2.0, quad_sigma=
 grabando = False
 frame_actual = None
 lock = threading.Lock()
-coordenadas = {}  # Diccionario para almacenar trayectorias por ID
+coordenadas = {}  
 
-# Colores predefinidos para cada ID
 colores = [
     "red", "blue", "green", "orange", "purple", "cyan", "yellow", "magenta", "white"
 ]
 
 def get_color(tag_id):
-    return colores[tag_id % len(colores)]  # Asigna un color diferente a cada ID
+    return colores[tag_id % len(colores)]  
 
 def capturar_frames():
     global frame_actual
