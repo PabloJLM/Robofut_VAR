@@ -84,25 +84,24 @@ def update_video():
     app.after(10, update_video)
 
 def update_map():
-    campo.delete("all")
+    campo.delete("all") 
 
     x_campo = campo.winfo_width()
     y_campo = campo.winfo_height()
-    cam_x, cam_y = 640, 480
+    cam_x, cam_y = 640, 480  
+
+    radio = 8
 
     for tag_id, coords in coordenadas.items():
-        color = get_color(tag_id)
+        if coords:
+            x, y = coords[-1] 
+            x = int(x / cam_x * x_campo)
+            y = int(y / cam_y * y_campo)
 
-        for i in range(1, len(coords)):
-            x1, y1 = coords[i - 1]
-            x2, y2 = coords[i]
+            campo.create_oval(x - radio, y - radio, x + radio, y + radio, fill="red", outline="white", width=3)
 
-            x1 = int(x1 / cam_x * x_campo)
-            y1 = int(y1 / cam_y * y_campo)
-            x2 = int(x2 / cam_x * x_campo)
-            y2 = int(y2 / cam_y * y_campo)
+            campo.create_text(x, y - 12, text=str(tag_id), fill="white", font=("Arial", 10, "bold"))
 
-            campo.create_line(x1, y1, x2, y2, fill=color, width=2)
 
 def grabar_video():
     global grabando
