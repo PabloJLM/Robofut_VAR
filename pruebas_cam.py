@@ -88,8 +88,17 @@ def update_map():
 
     x_campo = campo.winfo_width()
     y_campo = campo.winfo_height()
-    cam_x, cam_y = 640, 480  
-
+    cam_x, cam_y = 640, 480
+    
+    #cargamos imagen   
+    img_PIL = Image.open("campo.jpg").resize((x_campo,y_campo))
+    img_campo = ImageTk.PhotoImage(img_PIL)
+    
+    #dibujar el campo
+    campo.create_image(0, 0, anchor="nw", image=img_campo)
+    campo.image = img_campo
+    campo.lower("all")
+    
     radio = 8
 
     for tag_id, coords in coordenadas.items():
@@ -97,8 +106,9 @@ def update_map():
             x, y = coords[-1] 
             x = int(x / cam_x * x_campo)
             y = int(y / cam_y * y_campo)
-
-            campo.create_oval(x - radio, y - radio, x + radio, y + radio, fill="red", outline="white", width=3)
+            
+            color = get_color(tag_id) 
+            campo.create_oval(x - radio, y - radio, x + radio, y + radio, fill=color, outline="white", width=5)
 
             campo.create_text(x, y - 12, text=str(tag_id), fill="white", font=("Arial", 10, "bold"))
 
