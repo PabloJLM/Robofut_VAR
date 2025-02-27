@@ -71,7 +71,6 @@ class Principal:
         self.image_label = ctk.CTkLabel(root, text="")
         self.image_label.grid(row=0, column=1, padx=10, pady=10)
 
-        #self.create_color_table()
 
         self.cap = cv2.VideoCapture(cam_index)
         self.update_frame()
@@ -86,32 +85,32 @@ class Principal:
         ctk.CTkLabel(table_frame, text="S", font=("Arial", 12, "bold")).grid(row=1, column=2, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="V", font=("Arial", 12, "bold")).grid(row=1, column=3, padx=5, pady=2)
 
-        ctk.CTkLabel(table_frame, text="Rojo", font=("Arial", 12)).grid(row=2, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Rojo", font=("Arial", 12), text_color="red").grid(row=2, column=0, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="125-180").grid(row=2, column=1, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=2, column=2, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=2, column=3, padx=5, pady=2)
 
-        ctk.CTkLabel(table_frame, text="Naranja", font=("Arial", 12)).grid(row=3, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Naranja", font=("Arial", 12), text_color="orange").grid(row=3, column=0, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="0-10").grid(row=3, column=1, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=3, column=2, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="0-255").grid(row=3, column=3, padx=5, pady=2)
 
-        ctk.CTkLabel(table_frame, text="Amarillo", font=("Arial", 12)).grid(row=4, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Amarillo", font=("Arial", 12), text_color="yellow").grid(row=4, column=0, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="25-35").grid(row=4, column=1, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=4, column=2, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=4, column=3, padx=5, pady=2)
 
-        ctk.CTkLabel(table_frame, text="Verde", font=("Arial", 12)).grid(row=5, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Verde", font=("Arial", 12), text_color="green").grid(row=5, column=0, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="40-85").grid(row=5, column=1, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=5, column=2, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=5, column=3, padx=5, pady=2)
 
-        ctk.CTkLabel(table_frame, text="Azul", font=("Arial", 12)).grid(row=6, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Azul", font=("Arial", 12), text_color="blue").grid(row=6, column=0, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="85-130").grid(row=6, column=1, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=6, column=2, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=6, column=3, padx=5, pady=2)
 
-        ctk.CTkLabel(table_frame, text="Morado", font=("Arial", 12)).grid(row=7, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Morado", font=("Arial", 12), text_color="purple").grid(row=7, column=0, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="130-160").grid(row=7, column=1, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=7, column=2, padx=5, pady=2)
         ctk.CTkLabel(table_frame, text="100-255").grid(row=7, column=3, padx=5, pady=2)
