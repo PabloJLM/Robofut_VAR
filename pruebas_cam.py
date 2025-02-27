@@ -156,39 +156,33 @@ titulo_frame.grid(row=0, column=0, columnspan=2, pady=10, sticky="ew")
 titulo_frame.columnconfigure([0, 1, 2], weight=1)
 titulo_frame.configure(fg_color="#03539e")
 
-# Cargar y mostrar el logo
+
 logo_img = Image.open(logo_path).resize((200, 85), Image.Resampling.LANCZOS)
 logo_tk = ImageTk.PhotoImage(logo_img)
 logo_label = customtkinter.CTkLabel(titulo_frame, image=logo_tk, text="")
 logo_label.image = logo_tk
 logo_label.grid(row=0, column=0, sticky="w", padx=5)
 
-# Título centrado
 titulo = customtkinter.CTkLabel(titulo_frame, text="Panel de Control", font=("Arial Black", 24, "bold"), text_color="white")
 titulo.grid(row=0, column=1, sticky="nsew")
 
-# Reloj en la esquina superior derecha
 reloj_label = customtkinter.CTkLabel(titulo_frame, text="", font=("Arial", 24, "bold"), text_color="white")
 reloj_label.grid(row=0, column=2, padx=10, sticky="e")
 
-# Función para actualizar el reloj en tiempo real
 def actualizar_reloj():
     hora_actual = time.strftime("%H:%M:%S")
     reloj_label.configure(text=hora_actual)
     app.after(1000, actualizar_reloj)
 
-actualizar_reloj()  # Iniciar actualización del reloj
+actualizar_reloj()  
 
-# Configuración de las filas
 app.grid_rowconfigure(1, weight=1)
 app.grid_rowconfigure(2, weight=1)
 app.grid_columnconfigure(0, weight=1)
 
-# Video Canvas
 video_canvas = customtkinter.CTkCanvas(app, bg="black", width=640, height=480)
 video_canvas.grid(row=1, column=0, columnspan=3, sticky="nsew", padx=10, pady=10)
 
-# Campo Canvas
 campo = customtkinter.CTkCanvas(app, width=640, height=480, bg="white")
 campo.grid(row=2, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
 
