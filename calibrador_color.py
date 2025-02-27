@@ -71,37 +71,61 @@ class Principal:
         self.image_label = ctk.CTkLabel(root, text="")
         self.image_label.grid(row=0, column=1, padx=10, pady=10)
 
-        self.create_color_table()
+        #self.create_color_table()
 
         self.cap = cv2.VideoCapture(cam_index)
         self.update_frame()
 
-    def create_color_table(self):
         table_frame = ctk.CTkFrame(self.root)
         table_frame.grid(row=0, column=2, padx=10, pady=10, sticky="ns")
 
         ctk.CTkLabel(table_frame, text="Valores HSV para colores", font=("Arial", 14, "bold")).grid(row=0, column=0, columnspan=4, padx=10, pady=5)
 
-        headers = ["Color", "H", "S", "V"]
-        for col, header in enumerate(headers):
-            ctk.CTkLabel(table_frame, text=header, font=("Arial", 12, "bold")).grid(row=1, column=col, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Color", font=("Arial", 12, "bold")).grid(row=1, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="H", font=("Arial", 12, "bold")).grid(row=1, column=1, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="S", font=("Arial", 12, "bold")).grid(row=1, column=2, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="V", font=("Arial", 12, "bold")).grid(row=1, column=3, padx=5, pady=2)
 
-        colors = [
-            ("Rojo", "125-180", "100-255", "100-255"),
-            ("Naranja", "0-10", "100-255", "0-255"),
-            ("Amarillo", "25-35", "100-255", "100-255"),
-            ("Verde", "40-85", "100-255", "100-255"),
-            ("Azul", "85-130", "100-255", "100-255"),
-            ("Morado", "130-160", "100-255", "100-255"),
-            ("Negro", "Cualquier H", "0-50", "0-50"),
-            ("Blanco", "Cualquier H", "0-50", "170-255"),
-        ]
+        ctk.CTkLabel(table_frame, text="Rojo", font=("Arial", 12)).grid(row=2, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="125-180").grid(row=2, column=1, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=2, column=2, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=2, column=3, padx=5, pady=2)
 
-        for row, (color, h, s, v) in enumerate(colors, start=2):
-            ctk.CTkLabel(table_frame, text=color, font=("Arial", 12)).grid(row=row, column=0, padx=5, pady=2)
-            ctk.CTkLabel(table_frame, text=h).grid(row=row, column=1, padx=5, pady=2)
-            ctk.CTkLabel(table_frame, text=s).grid(row=row, column=2, padx=5, pady=2)
-            ctk.CTkLabel(table_frame, text=v).grid(row=row, column=3, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Naranja", font=("Arial", 12)).grid(row=3, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="0-10").grid(row=3, column=1, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=3, column=2, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="0-255").grid(row=3, column=3, padx=5, pady=2)
+
+        ctk.CTkLabel(table_frame, text="Amarillo", font=("Arial", 12)).grid(row=4, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="25-35").grid(row=4, column=1, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=4, column=2, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=4, column=3, padx=5, pady=2)
+
+        ctk.CTkLabel(table_frame, text="Verde", font=("Arial", 12)).grid(row=5, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="40-85").grid(row=5, column=1, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=5, column=2, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=5, column=3, padx=5, pady=2)
+
+        ctk.CTkLabel(table_frame, text="Azul", font=("Arial", 12)).grid(row=6, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="85-130").grid(row=6, column=1, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=6, column=2, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=6, column=3, padx=5, pady=2)
+
+        ctk.CTkLabel(table_frame, text="Morado", font=("Arial", 12)).grid(row=7, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="130-160").grid(row=7, column=1, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=7, column=2, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="100-255").grid(row=7, column=3, padx=5, pady=2)
+
+        ctk.CTkLabel(table_frame, text="Negro", font=("Arial", 12)).grid(row=8, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Cualquier H").grid(row=8, column=1, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="0-50").grid(row=8, column=2, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="0-50").grid(row=8, column=3, padx=5, pady=2)
+
+        ctk.CTkLabel(table_frame, text="Blanco", font=("Arial", 12)).grid(row=9, column=0, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="Cualquier H").grid(row=9, column=1, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="0-50").grid(row=9, column=2, padx=5, pady=2)
+        ctk.CTkLabel(table_frame, text="170-255").grid(row=9, column=3, padx=5, pady=2)
+
 
     def update_values(self, _=None):
         for name in self.labels:
