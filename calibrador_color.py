@@ -1,0 +1,131 @@
+import cv2
+import numpy as np
+import customtkinter as ctk
+from PIL import Image, ImageTk
+
+class HSVMaskApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Calibrador de HSV")
+
+        self.sliders = {}
+        self.labels = {}
+        self.entries = {}
+
+        values = {
+            "Hue Min": (0, 179),
+            "Hue Max": (0, 179),
+            "Sat Min": (0, 255),
+            "Sat Max": (0, 255),
+            "Val Min": (0, 255),
+            "Val Max": (0, 255)
+        }
+
+        slider_frame = ctk.CTkFrame(root)
+        slider_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ns")
+
+        for i, (name, (min_val, max_val)) in enumerate(values.items()):
+            ctk.CTkLabel(slider_frame, text=name).grid(row=i, column=0, padx=5, pady=5, sticky="w")
+            self.sliders[name] = ctk.CTkSlider(slider_frame, from_=min_val, to=max_val, command=self.update_values)
+            self.sliders[name].grid(row=i, column=1, padx=5, pady=5)
+            self.labels[name] = ctk.CTkLabel(slider_frame, text=f"{int(self.sliders[name].get())}")
+            self.labels[name].grid(row=i, column=2, padx=5, pady=5)
+
+            self.entries[name] = ctk.CTkEntry(slider_frame, width=50)
+            self.entries[name].grid(row=i, column=3, padx=5, pady=5)
+            self.entries[name].insert(0, str(int(self.sliders[name].get())))
+            self.entries[name].bind("<Return>", self.update_from_entry)
+
+        self.sliders["Hue Min"].set(0)
+        self.sliders["Hue Max"].set(179)
+        self.sliders["Sat Min"].set(0)
+        self.sliders["Sat Max"].set(255)
+        self.sliders["Val Min"].set(0)
+        self.sliders["Val Max"].set(255)
+
+        self.image_label = ctk.CTkLabel(root, text="")
+        self.image_label.grid(row=0, column=1, padx=10, pady=10)
+
+        self.create_color_table()
+
+        self.cap = cv2.VideoCapture(0)
+        self.update_frame()
+
+    def create_color_table(self):
+        table_frame = ctk.CTkFrame(self.root)
+        table_frame.grid(row=0, column=2, padx=10, pady=10, sticky="ns")
+
+        ctk.CTkLabel(table_frame, text="Valores HSV para colores", font=("Arial", 14, "bold")).grid(row=0, column=0, columnspan=4, padx=10, pady=5)
+
+        headers = ["Color", "H", "S", "V"]
+        for col, header in enumerate(headers):
+            ctk.CTkLabel(table_frame, text=header, font=("Arial", 12, "bold")).grid(row=1, column=col, padx=5, pady=2)
+
+        colors = [
+            ("Rojo", "125-180", "100-255", "100-255"),
+            ("Naranja", "0-10", "100-255", "0-255"),
+            ("Amarillo", "25-35", "100-255", "100-255"),
+            ("Verde", "40-85", "100-255", "100-255"),
+            ("Azul", "85-130", "100-255", "100-255"),
+            ("Morado", "130-160", "100-255", "100-255"),
+            ("Negro", "Cualquier H", "0-50", "0-50"),
+            ("Blanco", "Cualquier H", "0-50", "170-255"),
+        ]
+
+        for row, (color, h, s, v) in enumerate(colors, start=2):
+            ctk.CTkLabel(table_frame, text=color, font=("Arial", 12)).grid(row=row, column=0, padx=5, pady=2)
+            ctk.CTkLabel(table_frame, text=h).grid(row=row, column=1, padx=5, pady=2)
+            ctk.CTkLabel(table_frame, text=s).grid(row=row, column=2, padx=5, pady=2)
+            ctk.CTkLabel(table_frame, text=v).grid(row=row, column=3, padx=5, pady=2)
+
+    def update_values(self, _=None):
+        for name in self.labels:
+            val = int(self.sliders[name].get())
+            self.labels[name].configure(text=f"{val}")
+            self.entries[name].delete(0, ctk.END)
+            self.entries[name].insert(0, str(val))
+
+    def update_from_entry(self, event):
+        for name in self.entries:
+            try:
+                val = int(self.entries[name].get())
+                min_val, max_val = 0, 179 if "Hue" in name else 255
+                val = max(min_val, min(val, max_val))
+                self.sliders[name].set(val)
+            except ValueError:
+                pass
+
+    def update_frame(self):
+        ret, frame = self.cap.read()
+        if ret:
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+            lower_bound = np.array([int(self.sliders["Hue Min"].get()), 
+                                    int(self.sliders["Sat Min"].get()), 
+                                    int(self.sliders["Val Min"].get())])
+            upper_bound = np.array([int(self.sliders["Hue Max"].get()), 
+                                    int(self.sliders["Sat Max"].get()), 
+                                    int(self.sliders["Val Max"].get())])
+
+            mask = cv2.inRange(hsv, lower_bound, upper_bound)
+            result = cv2.bitwise_and(frame, frame, mask=mask)
+
+            img = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(img)
+            img = ImageTk.PhotoImage(img)
+
+            self.image_label.configure(image=img)
+            self.image_label.image = img
+
+        self.root.after(10, self.update_frame)
+
+    def run(self):
+        self.root.mainloop()
+        self.cap.release()
+        cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    ctk.set_appearance_mode("dark")
+    root = ctk.CTk()
+    app = HSVMaskApp(root)
+    app.run()
