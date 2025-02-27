@@ -3,8 +3,33 @@ import numpy as np
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
-class HSVMaskApp:
+class Seleccion_Cam:
     def __init__(self, root):
+        self.root = root
+        self.root.title("Seleccionar Cámara")
+
+        ctk.CTkLabel(root, text="Índice de Cámara:").grid(row=0, column=0, padx=10, pady=10)
+        self.cam_index = ctk.CTkEntry(root, width=50)
+        self.cam_index.grid(row=0, column=1, padx=10, pady=10)
+        self.cam_index.insert(0, "0")
+
+        ctk.CTkButton(root, text="Aceptar", command=self.confirm).grid(row=1, column=0, columnspan=2, padx=10, pady=10)
+
+        self.selected_index = None
+
+    def confirm(self):
+        try:
+            self.selected_index = int(self.cam_index.get())
+            self.root.destroy()
+        except ValueError:
+            pass
+
+    def get_index(self):
+        self.root.mainloop()
+        return self.selected_index
+
+class Principal:
+    def __init__(self, root, cam_index):
         self.root = root
         self.root.title("Calibrador de HSV")
 
@@ -35,7 +60,7 @@ class HSVMaskApp:
             self.entries[name].grid(row=i, column=3, padx=5, pady=5)
             self.entries[name].insert(0, str(int(self.sliders[name].get())))
             self.entries[name].bind("<Return>", self.update_from_entry)
-
+            
         self.sliders["Hue Min"].set(0)
         self.sliders["Hue Max"].set(179)
         self.sliders["Sat Min"].set(0)
@@ -48,7 +73,7 @@ class HSVMaskApp:
 
         self.create_color_table()
 
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(cam_index)
         self.update_frame()
 
     def create_color_table(self):
@@ -126,6 +151,11 @@ class HSVMaskApp:
 
 if __name__ == "__main__":
     ctk.set_appearance_mode("dark")
+    
+    cam_selection_root = ctk.CTk()
+    cam_selection = Seleccion_Cam(cam_selection_root)
+    cam_index = cam_selection.get_index()
+
     root = ctk.CTk()
-    app = HSVMaskApp(root)
+    app = Principal(root, cam_index)
     app.run()
