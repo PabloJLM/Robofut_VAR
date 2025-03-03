@@ -15,7 +15,7 @@ with open(calibration_file, "rb") as f:
     dist = calib_data["dist"]
 
 
-link = "rtsp://PabloJ1012:PabloJ1012@192.168.0.20:554/stream2"
+link = "rtsp://PabloJ1012:PabloJ1012@192.168.0.20:554/stream1" #blur =5 si es stream2 blur =9 si es stream1
 cap = cv2.VideoCapture(link)
 
 if not cap.isOpened():
@@ -26,7 +26,7 @@ if not cap.isOpened():
 params = cv2.SimpleBlobDetector_Params()
 params.filterByColor = False  
 params.filterByArea = True
-params.minArea = 25
+params.minArea = 100
 params.maxArea = 5000
 params.filterByConvexity = True
 params.minConvexity = 0.85
@@ -54,14 +54,14 @@ while True:
     mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
     mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
     mask = cv2.bitwise_or(mask1, mask2)
-    mask = cv2.medianBlur(mask, 5)
+    mask = cv2.medianBlur(mask, 9)
 
     keypoints = detector.detect(mask)
 
     result = corrected.copy()
     result = cv2.drawKeypoints(result, keypoints, None, (0, 255, 0), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-    cv2.imshow("Original", corrected)
+    #cv2.imshow("Original", corrected)
     cv2.imshow("Mascara Roja", mask)
     cv2.imshow("Detección de LED Rojo", result)
 
