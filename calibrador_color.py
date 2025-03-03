@@ -3,35 +3,16 @@ import numpy as np
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
-class Seleccion_Cam:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Seleccionar Cámara")
-
-        ctk.CTkLabel(root, text="Índice de Cámara:").grid(row=0, column=0, padx=10, pady=10)
-        self.cam_index = ctk.CTkEntry(root, width=50)
-        self.cam_index.grid(row=0, column=1, padx=10, pady=10)
-        self.cam_index.insert(0, "1")
-
-        ctk.CTkButton(root, text="Aceptar", command=self.confirm).grid(row=1, column=0, columnspan=2, padx=10, pady=10)
-
-        self.selected_index = None
-
-    def confirm(self):
-        try:
-            self.selected_index = int(self.cam_index.get())
-            self.root.destroy()
-        except ValueError:
-            pass
-
-    def get_index(self):
-        self.root.mainloop()
-        return self.selected_index
+RTSP_URL = "rtsp://PabloJ1012:PabloJ1012@192.168.0.20:554/stream1"
 
 class Principal:
-    def __init__(self, root, cam_index):
+    def __init__(self, root):
         self.root = root
         self.root.title("Calibrador de HSV")
+
+        # Configuración inicial de tamaño
+        self.frame_width = 640
+        self.frame_height = 480
 
         self.sliders = {}
         self.labels = {}
@@ -69,62 +50,21 @@ class Principal:
         self.sliders["Val Max"].set(255)
 
         self.image_label = ctk.CTkLabel(root, text="")
-        self.image_label.grid(row=0, column=1, padx=10, pady=10)
+        self.image_label.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
 
+        self.cap = cv2.VideoCapture(RTSP_URL)
+        if not self.cap.isOpened():
+            print("Error: No se pudo conectar a la cámara IP")
 
-        self.cap = cv2.VideoCapture(cam_index)
+        # Detectar cambios de tamaño de ventana
+        self.root.bind("<Configure>", self.resize_window)
+        
         self.update_frame()
 
-        table_frame = ctk.CTkFrame(self.root)
-        table_frame.grid(row=0, column=2, padx=10, pady=10, sticky="ns")
-
-        ctk.CTkLabel(table_frame, text="Valores HSV para colores", font=("Arial", 14, "bold")).grid(row=0, column=0, columnspan=4, padx=10, pady=5)
-
-        ctk.CTkLabel(table_frame, text="Color", font=("Arial", 12, "bold")).grid(row=1, column=0, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="H", font=("Arial", 12, "bold")).grid(row=1, column=1, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="S", font=("Arial", 12, "bold")).grid(row=1, column=2, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="V", font=("Arial", 12, "bold")).grid(row=1, column=3, padx=5, pady=2)
-
-        ctk.CTkLabel(table_frame, text="Rojo", font=("Arial", 12), text_color="red").grid(row=2, column=0, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="125-180").grid(row=2, column=1, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=2, column=2, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=2, column=3, padx=5, pady=2)
-
-        ctk.CTkLabel(table_frame, text="Naranja", font=("Arial", 12), text_color="orange").grid(row=3, column=0, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="0-10").grid(row=3, column=1, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=3, column=2, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="0-255").grid(row=3, column=3, padx=5, pady=2)
-
-        ctk.CTkLabel(table_frame, text="Amarillo", font=("Arial", 12), text_color="yellow").grid(row=4, column=0, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="25-35").grid(row=4, column=1, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=4, column=2, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=4, column=3, padx=5, pady=2)
-
-        ctk.CTkLabel(table_frame, text="Verde", font=("Arial", 12), text_color="green").grid(row=5, column=0, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="40-85").grid(row=5, column=1, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=5, column=2, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=5, column=3, padx=5, pady=2)
-
-        ctk.CTkLabel(table_frame, text="Azul", font=("Arial", 12), text_color="blue").grid(row=6, column=0, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="85-130").grid(row=6, column=1, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=6, column=2, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=6, column=3, padx=5, pady=2)
-
-        ctk.CTkLabel(table_frame, text="Morado", font=("Arial", 12), text_color="purple").grid(row=7, column=0, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="130-160").grid(row=7, column=1, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=7, column=2, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="100-255").grid(row=7, column=3, padx=5, pady=2)
-
-        ctk.CTkLabel(table_frame, text="Negro", font=("Arial", 12)).grid(row=8, column=0, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="Cualquier H").grid(row=8, column=1, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="0-50").grid(row=8, column=2, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="0-50").grid(row=8, column=3, padx=5, pady=2)
-
-        ctk.CTkLabel(table_frame, text="Blanco", font=("Arial", 12)).grid(row=9, column=0, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="Cualquier H").grid(row=9, column=1, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="0-50").grid(row=9, column=2, padx=5, pady=2)
-        ctk.CTkLabel(table_frame, text="170-255").grid(row=9, column=3, padx=5, pady=2)
-
+    def resize_window(self, event=None):
+        """ Ajusta el tamaño del frame según el tamaño de la ventana """
+        self.frame_width = self.root.winfo_width() - 20  # Ajuste de margen
+        self.frame_height = self.root.winfo_height() - 50  # Ajuste de margen
 
     def update_values(self, _=None):
         for name in self.labels:
@@ -146,6 +86,9 @@ class Principal:
     def update_frame(self):
         ret, frame = self.cap.read()
         if ret:
+            # Redimensiona el frame al tamaño de la ventana
+            frame = cv2.resize(frame, (self.frame_width, self.frame_height))
+
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
             lower_bound = np.array([int(self.sliders["Hue Min"].get()), 
@@ -174,11 +117,9 @@ class Principal:
 
 if __name__ == "__main__":
     ctk.set_appearance_mode("dark")
-    
-    cam_selection_root = ctk.CTk()
-    cam_selection = Seleccion_Cam(cam_selection_root)
-    cam_index = cam_selection.get_index()
 
     root = ctk.CTk()
-    app = Principal(root, cam_index)
+    root.geometry("800x600")  # Tamaño inicial
+    root.attributes('-fullscreen', False)  # Puedes cambiarlo a True para iniciar en pantalla completa
+    app = Principal(root)
     app.run()
