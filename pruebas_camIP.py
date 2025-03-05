@@ -13,7 +13,7 @@ with open(calibration_file, "rb") as f:
     mtx = calib_data["mtx"]
     dist = calib_data["dist"]
 
-link = "rtsp://PabloJ1012:PabloJ1012@192.168.0.20:554/stream1"
+link = "rtsp://PabloJ1012:PabloJ1012@192.168.0.3:554/stream1"
 cap = cv2.VideoCapture(link)
 
 w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -35,7 +35,7 @@ while True:
 
     diferencia = cv2.normalize(diferencia, None, 0, 255, cv2.NORM_MINMAX)
 
-    cv2.imshow("cam", correccion)
+    cv2.imshow("cam", diferencia)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break

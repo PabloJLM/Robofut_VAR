@@ -8,9 +8,8 @@ RTSP_URL = "rtsp://PabloJ1012:PabloJ1012@192.168.0.3:554/stream1"
 class Principal:
     def __init__(self, root):
         self.root = root
-        self.root.title("Calibrador de HSV")
+        self.root.title("Calibrador de RGB")
 
-        # Configuración inicial de tamaño
         self.frame_width = 640
         self.frame_height = 480
 
@@ -19,12 +18,12 @@ class Principal:
         self.entries = {}
 
         values = {
-            "Hue Min": (0, 179),
-            "Hue Max": (0, 179),
-            "Sat Min": (0, 255),
-            "Sat Max": (0, 255),
-            "Val Min": (0, 255),
-            "Val Max": (0, 255)
+            "Red Min": (0, 255),
+            "Red Max": (0, 255),
+            "Green Min": (0, 255),
+            "Green Max": (0, 255),
+            "Blue Min": (0, 255),
+            "Blue Max": (0, 255)
         }
 
         slider_frame = ctk.CTkFrame(root)
@@ -42,12 +41,13 @@ class Principal:
             self.entries[name].insert(0, str(int(self.sliders[name].get())))
             self.entries[name].bind("<Return>", self.update_from_entry)
             
-        self.sliders["Hue Min"].set(0)
-        self.sliders["Hue Max"].set(179)
-        self.sliders["Sat Min"].set(0)
-        self.sliders["Sat Max"].set(255)
-        self.sliders["Val Min"].set(0)
-        self.sliders["Val Max"].set(255)
+        # Valores iniciales
+        self.sliders["Red Min"].set(0)
+        self.sliders["Red Max"].set(255)
+        self.sliders["Green Min"].set(0)
+        self.sliders["Green Max"].set(255)
+        self.sliders["Blue Min"].set(0)
+        self.sliders["Blue Max"].set(255)
 
         self.image_label = ctk.CTkLabel(root, text="")
         self.image_label.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
@@ -77,8 +77,7 @@ class Principal:
         for name in self.entries:
             try:
                 val = int(self.entries[name].get())
-                min_val, max_val = 0, 179 if "Hue" in name else 255
-                val = max(min_val, min(val, max_val))
+                val = max(0, min(val, 255))  # Asegurar que esté en rango
                 self.sliders[name].set(val)
             except ValueError:
                 pass
@@ -89,16 +88,17 @@ class Principal:
             # Redimensiona el frame al tamaño de la ventana
             frame = cv2.resize(frame, (self.frame_width, self.frame_height))
 
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            # Convertir a RGB (OpenCV usa BGR por defecto)
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-            lower_bound = np.array([int(self.sliders["Hue Min"].get()), 
-                                    int(self.sliders["Sat Min"].get()), 
-                                    int(self.sliders["Val Min"].get())])
-            upper_bound = np.array([int(self.sliders["Hue Max"].get()), 
-                                    int(self.sliders["Sat Max"].get()), 
-                                    int(self.sliders["Val Max"].get())])
+            lower_bound = np.array([int(self.sliders["Red Min"].get()), 
+                                    int(self.sliders["Green Min"].get()), 
+                                    int(self.sliders["Blue Min"].get())])
+            upper_bound = np.array([int(self.sliders["Red Max"].get()), 
+                                    int(self.sliders["Green Max"].get()), 
+                                    int(self.sliders["Blue Max"].get())])
 
-            mask = cv2.inRange(hsv, lower_bound, upper_bound)
+            mask = cv2.inRange(frame_rgb, lower_bound, upper_bound)
             result = cv2.bitwise_and(frame, frame, mask=mask)
 
             img = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)

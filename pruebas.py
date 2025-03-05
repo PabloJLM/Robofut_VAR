@@ -3,73 +3,80 @@ import pickle
 import os
 import numpy as np
 
-# Cargar calibración de la cámara
-calibration_file = "calibration_data/calibration_matrices.p"
-if not os.path.exists(calibration_file):
-    print(f"Error: No se encontró {calibration_file}. Primero calibra la cámara.")
+archivo_calibracion = "calibration_data/calibration_matrices.p"
+if not os.path.exists(archivo_calibracion):
+    print(f"Error: No se encontró {archivo_calibracion}. Primero calibra la cámara.")
     exit()
 
-with open(calibration_file, "rb") as f:
-    calib_data = pickle.load(f)
-    mtx = calib_data["mtx"]
-    dist = calib_data["dist"]
+with open(archivo_calibracion, "rb") as f:
+    datos_calibracion = pickle.load(f)
+    matriz = datos_calibracion["mtx"]
+    distorsion = datos_calibracion["dist"]
 
-# Configuración del stream
-link = "rtsp://PabloJ1012:PabloJ1012@192.168.0.20:554/stream1"
-cap = cv2.VideoCapture(link)
+link = "rtsp://PabloJ1012:PabloJ1012@192.168.0.3:554/stream1"
+Cam = cv2.VideoCapture(link, cv2.CAP_FFMPEG)  
 
-if not cap.isOpened():
+if not Cam.isOpened():
     print("Error al abrir la transmisión RTSP")
     exit()
 
-# Configurar detector de blobs
-params = cv2.SimpleBlobDetector_Params()
-params.filterByColor = False  
-params.filterByArea = True
-params.minArea = 150
-params.maxArea = 5000
-params.filterByConvexity = False
-params.minConvexity = 0.8
-params.filterByCircularity = False
-params.minCircularity = 0.7
-params.filterByInertia = False
+Cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+Cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+Cam.set(cv2.CAP_PROP_BUFFERSIZE, 2)  
+Cam.set(cv2.CAP_PROP_FPS, 30)  
 
-detector = cv2.SimpleBlobDetector_create(params)
+parametros = cv2.SimpleBlobDetector_Params()
+parametros.filterByColor = False  
+parametros.filterByArea = True
+parametros.minArea = 150
+parametros.maxArea = 5000
+parametros.filterByConvexity = False
+parametros.minConvexity = 0.8
+parametros.filterByCircularity = False
+parametros.minCircularity = 0.7
+parametros.filterByInertia = False
 
-while True:
-    ret, frame = cap.read()
+detector = cv2.SimpleBlobDetector_create(parametros)
+
+while Cam.isOpened():
+    for _ in range(5): 
+        Cam.grab()
+
+    ret, frame = Cam.read()
     if not ret:
-        print("Error al recibir el frame")
+        print("Error al recibir el fotograma")
         break
 
-    # Corrección de distorsión
-    corrected = cv2.undistort(frame, mtx, dist, None, mtx)
-    
-    # Conversión a HSV y segmentación del LED rojo
-    hsv = cv2.cvtColor(corrected, cv2.COLOR_BGR2HSV)
-    lower_red1 = np.array([0, 0, 240])
-    upper_red1 = np.array([174, 255, 255])
-    mask = cv2.inRange(hsv, lower_red1, upper_red1)
-    mask = cv2.medianBlur(mask, 9)
+    undist = cv2.undistort(frame, matriz, distorsion, None, matriz)
 
-    # Detección de blobs
-    keypoints = detector.detect(mask)
+    rojo_min = np.array([0, 0, 220])  
+    rojo_max = np.array([220, 150, 255])  
 
-    # Seleccionar solo el keypoint más grande
-    if keypoints:
-        keypoints = sorted(keypoints, key=lambda k: k.size, reverse=True)  # Ordenar por tamaño
-        keypoints = [keypoints[0]]  # Solo el más grande
+    mask = cv2.inRange(undist, rojo_min, rojo_max)
+    mask = cv2.medianBlur(mask, 9)  
 
-    # Dibujar el keypoint seleccionado
-    result = corrected.copy()
-    result = cv2.drawKeypoints(result, keypoints, None, (0, 255, 0), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    blobs = detector.detect(mask)
 
-    # Mostrar resultados
-    cv2.imshow("Mascara Roja", mask)
-    cv2.imshow("Detección de LED Rojo", result)
+    final = undist.copy()
+
+    if len(blobs) >= 2:
+        blobs = sorted(blobs, key=lambda k: k.size, reverse=True)[:2]  #toma los 2 leds rojos 
+        etiquetas = ["LED1", "LED2"]
+
+        for i, blob in enumerate(blobs):
+            x, y = int(blob.pt[0]), int(blob.pt[1])  
+            print(f"{etiquetas[i]}: ({x}, {y})")  
+
+            cv2.circle(final, (x, y), 5, (0, 255, 0), -1)  
+            cv2.putText(final, f"{etiquetas[i]}", (x + 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 
+                        0.5, (0, 255, 0), 2, cv2.LINE_AA)
+
+    final = cv2.drawKeypoints(final, blobs, None, (0, 255, 0), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+    cv2.imshow("Detección de LED Rojo (RGB)", final)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-cap.release()
+Cam.release()
 cv2.destroyAllWindows()
