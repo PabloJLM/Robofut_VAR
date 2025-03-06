@@ -16,14 +16,12 @@ with open(archivo_calibracion, "rb") as f:
     matriz = datos_calibracion["mtx"]
     distorsion = datos_calibracion["dist"]
 
-RTSP_URL = "rtsp://PabloJ1012:PabloJ1012@192.168.0.3:554/stream1"
-
-class Principal:
+class LabCalibrator:
     def __init__(self, root):
         self.root = root
-        self.root.title("Calibrador de HSV")
+        self.root.title("Calibrador de Lab")
 
-        # Configuración inicial de tamaño
+        # Configuración de tamaño
         self.frame_width = 640
         self.frame_height = 480
 
@@ -31,13 +29,14 @@ class Principal:
         self.labels = {}
         self.entries = {}
 
+        # Rango de valores en el espacio Lab
         values = {
-            "Hue Min": (0, 179),
-            "Hue Max": (0, 179),
-            "Sat Min": (0, 255),
-            "Sat Max": (0, 255),
-            "Val Min": (0, 255),
-            "Val Max": (0, 255)
+            "L Min": (0, 255),
+            "L Max": (0, 255),
+            "A Min": (0, 255),
+            "A Max": (0, 255),
+            "B Min": (0, 255),
+            "B Max": (0, 255)
         }
 
         slider_frame = ctk.CTkFrame(root)
@@ -54,13 +53,14 @@ class Principal:
             self.entries[name].grid(row=i, column=3, padx=5, pady=5)
             self.entries[name].insert(0, str(int(self.sliders[name].get())))
             self.entries[name].bind("<Return>", self.update_from_entry)
-            
-        self.sliders["Hue Min"].set(0)
-        self.sliders["Hue Max"].set(179)
-        self.sliders["Sat Min"].set(0)
-        self.sliders["Sat Max"].set(255)
-        self.sliders["Val Min"].set(0)
-        self.sliders["Val Max"].set(255)
+
+        # Valores iniciales
+        self.sliders["L Min"].set(0)
+        self.sliders["L Max"].set(255)
+        self.sliders["A Min"].set(0)
+        self.sliders["A Max"].set(255)
+        self.sliders["B Min"].set(0)
+        self.sliders["B Max"].set(255)
 
         self.image_label = ctk.CTkLabel(root, text="")
         self.image_label.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
@@ -69,15 +69,13 @@ class Principal:
         if not self.cap.isOpened():
             print("Error: No se pudo conectar a la cámara IP")
 
-        # Detectar cambios de tamaño de ventana
         self.root.bind("<Configure>", self.resize_window)
-        
         self.update_frame()
 
     def resize_window(self, event=None):
-        """ Ajusta el tamaño del frame según el tamaño de la ventana """
-        self.frame_width = self.root.winfo_width() - 20  # Ajuste de margen
-        self.frame_height = self.root.winfo_height() - 50  # Ajuste de margen
+        """ Ajusta el tamaño del frame según la ventana """
+        self.frame_width = self.root.winfo_width() - 20
+        self.frame_height = self.root.winfo_height() - 50
 
     def update_values(self, _=None):
         for name in self.labels:
@@ -90,8 +88,7 @@ class Principal:
         for name in self.entries:
             try:
                 val = int(self.entries[name].get())
-                min_val, max_val = 0, 179 if "Hue" in name else 255
-                val = max(min_val, min(val, max_val))
+                val = max(0, min(val, 255))  # Asegurar que esté en rango
                 self.sliders[name].set(val)
             except ValueError:
                 pass
@@ -99,20 +96,21 @@ class Principal:
     def update_frame(self):
         ret, frame = self.cap.read()
         if ret:
-            frame = cv2.undistort(frame, matriz, distorsion, None, matriz)
             # Redimensiona el frame al tamaño de la ventana
+            frame = cv2.undistort(frame, matriz, distorsion, None, matriz)
             frame = cv2.resize(frame, (self.frame_width, self.frame_height))
+            
 
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            lab = cv2.cvtColor(frame, cv2.COLOR_BGR2Lab)
 
-            lower_bound = np.array([int(self.sliders["Hue Min"].get()), 
-                                    int(self.sliders["Sat Min"].get()), 
-                                    int(self.sliders["Val Min"].get())])
-            upper_bound = np.array([int(self.sliders["Hue Max"].get()), 
-                                    int(self.sliders["Sat Max"].get()), 
-                                    int(self.sliders["Val Max"].get())])
+            lower_bound = np.array([int(self.sliders["L Min"].get()), 
+                                    int(self.sliders["A Min"].get()), 
+                                    int(self.sliders["B Min"].get())])
+            upper_bound = np.array([int(self.sliders["L Max"].get()), 
+                                    int(self.sliders["A Max"].get()), 
+                                    int(self.sliders["B Max"].get())])
 
-            mask = cv2.inRange(hsv, lower_bound, upper_bound)
+            mask = cv2.inRange(lab, lower_bound, upper_bound)
             result = cv2.bitwise_and(frame, frame, mask=mask)
 
             img = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
@@ -133,7 +131,7 @@ if __name__ == "__main__":
     ctk.set_appearance_mode("dark")
 
     root = ctk.CTk()
-    root.geometry("800x600")  # Tamaño inicial
-    root.attributes('-fullscreen', False)  # Puedes cambiarlo a True para iniciar en pantalla completa
-    app = Principal(root)
+    root.geometry("800x600")
+    root.attributes('-fullscreen', False)  
+    app = LabCalibrator(root)
     app.run()
