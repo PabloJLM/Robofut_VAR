@@ -15,7 +15,7 @@ with open(archivo_calibracion, "rb") as f:
     distorsion = datos_calibracion["dist"]
 
 # Configuración de la cámara
-link = "rtsp://PabloJ1012:PabloJ1012@192.168.0.3:554/stream1"
+link = "rtsp://PabloJ1012:PabloJ1012@192.168.0.3:554/stream2"
 Cam = cv2.VideoCapture(link, cv2.CAP_FFMPEG)
 
 if not Cam.isOpened():
@@ -23,10 +23,10 @@ if not Cam.isOpened():
     exit()
 
 # Optimización de la cámara
-Cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)  # Resolución más baja para mejorar rendimiento
+Cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)  
 Cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 Cam.set(cv2.CAP_PROP_BUFFERSIZE, 2)  
-Cam.set(cv2.CAP_PROP_FPS, 15)  
+Cam.set(cv2.CAP_PROP_FPS, 30)  # FPS real de la cámara
 
 # Parámetros de detección de blobs
 parametros = cv2.SimpleBlobDetector_Params()
@@ -44,77 +44,63 @@ detector = cv2.SimpleBlobDetector_create(parametros)
 
 # Función para detectar blobs usando la máscara combinada
 def detectar_blobs(imagen):
-    # Convertir a espacio de color HSV
     hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
-
+    
     # Definir rango de color rojo en HSV
     rojo_bajo = np.array([164, 135, 220])
     rojo_alto = np.array([179, 255, 255])
     rojo_mask = cv2.inRange(hsv, rojo_bajo, rojo_alto)
 
-    # Detectar blobs blancos (en escala de grises)
-    gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
-    _, blanco_mask = cv2.threshold(gris, 250, 255, cv2.THRESH_BINARY)
-
-    # Fusionar las máscaras
-    fusion_mask = cv2.bitwise_or(rojo_mask, blanco_mask)
+    # Aplicar dilatación en lugar de blur para mejorar detección
+    kernel = np.ones((9, 9), np.uint8)
+    fusion_mask = cv2.dilate(rojo_mask, kernel, iterations=1)
 
     return fusion_mask
 
-# Bucle principal para capturar y procesar los fotogramas de la cámara
-while True:
-    # Saltar algunos fotogramas para reducir la latencia
-    for _ in range(5): 
-        Cam.grab()
+frame_count = 0  # Contador de frames
+keypoints_mem = []  # Almacenar blobs detectados
+etiquetas = ["LED_R1", "LED_R2"]
 
+# Bucle principal para capturar y mostrar los fotogramas
+while True:
     ret, frame = Cam.read()
     if not ret:
         print("Error al capturar el fotograma")
         break
 
     # Aplicar corrección de distorsión
-    frame_corregido = cv2.undistort(frame, matriz, distorsion)
+    frame_corregido = cv2.undistort(frame, matriz, distorsion, None, matriz)
 
-    # Obtener la máscara combinada
-    fusion_mask = detectar_blobs(frame_corregido)
-    # Aplicar Median Blur con un tamaño de kernel menor
-    fusion_mask = cv2.medianBlur(fusion_mask, 5)  # Reducir el tamaño del kernel
+    # Procesar blobs solo cada 5 frames
+    if frame_count % 5 == 0:
+        fusion_mask = detectar_blobs(frame_corregido)
+        keypoints = detector.detect(fusion_mask)
 
-    # Detectar blobs en la máscara combinada
-    keypoints = detector.detect(fusion_mask)
+        # Guardamos los blobs detectados en memoria
+        keypoints_mem = sorted(keypoints, key=lambda x: x.size, reverse=True)[:2]
 
-    # Ordenar los blobs por tamaño (mayor a menor)
-    keypoints_sorted = sorted(keypoints, key=lambda x: x.size, reverse=True)
+    # Dibujar blobs detectados en todos los frames (para fluidez)
+    for i, blob in enumerate(keypoints_mem):
+        x, y = int(blob.pt[0]), int(blob.pt[1])
+        
+        # Dibujar punto y círculo
+        cv2.circle(frame_corregido, (x, y), 5, (0, 255, 0), -1)
+        radio = int(blob.size / 2)
+        cv2.circle(frame_corregido, (x, y), radio, (0, 255, 0), 2)
 
-    # Seleccionar solo los dos blobs más grandes
-    if len(keypoints_sorted) >= 2:
-        keypoints_sorted = keypoints_sorted[:2]
-        etiquetas = ["LED_R1", "LED_R2"]
+        # Dibujar texto con fondo negro para mejor visibilidad
+        texto = f"{etiquetas[i]}: ({x}, {y})"
+        (text_w, text_h), _ = cv2.getTextSize(texto, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+        cv2.rectangle(frame_corregido, (x, y - 15), (x + text_w, y), (0, 0, 0), -1)
+        cv2.putText(frame_corregido, texto, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
 
-        # Dibujar los blobs detectados más grandes
-        for i, blob in enumerate(keypoints_sorted):
-            x, y = int(blob.pt[0]), int(blob.pt[1])
-            print(f"{etiquetas[i]}: ({x}, {y})")  # Imprimir coordenadas en consola
-
-            # Dibujar un círculo en el centro del blob
-            cv2.circle(frame_corregido, (x, y), 5, (0, 255, 0), -1)
-
-            radio = int(blob.size / 2)
-            cv2.circle(frame_corregido, (x, y), radio, (0, 255, 0), 2)
-
-            # Dibujar un texto para identificar el LED
-            cv2.putText(frame_corregido, f"{etiquetas[i]}", 
-                        (x + 10, y - 10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
-
-    # Mostrar la imagen con los blobs detectados
+    # Mostrar el video en tiempo real
     cv2.imshow('Blobs Detectados', frame_corregido)
 
-    # Mostrar la máscara combinada
-    cv2.imshow('Máscara Combinada', fusion_mask)
+    frame_count += 1  # Aumentar contador de frames
 
     # Salir del bucle al presionar 'q'
-    if cv2.waitKey(1) & 0xFF == ord('q' or 'Q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 # Liberar la cámara y cerrar las ventanas
