@@ -105,4 +105,4 @@ while True:
 
 # Liberar la cámara y cerrar las ventanas
 Cam.release()
-cv2.destroyAllWindows()
+cv2.destroyAllWindows() 
