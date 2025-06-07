@@ -4,25 +4,14 @@ import numpy as np
 import time
 import threading
 from PIL import Image, ImageTk
-import pupil_apriltags as apriltag
-logo_path = "logo.png"
-cap = cv2.VideoCapture(1)
-cap.set(cv2.CAP_PROP_FPS, 30)
-cap.set(cv2.CAP_PROP_EXPOSURE, -5)
-cap.set(cv2.CAP_PROP_BRIGHTNESS, 100)
 
-detector = apriltag.Detector(families="tag36h11", quad_decimate=2.0, quad_sigma=0.1)
+logo_path = "logo.png"
+cap = cv2.VideoCapture(0)
+
+
 grabando = False
 frame_actual = None
 lock = threading.Lock()
-coordenadas = {}  
-
-colores = [
-    "red", "blue"
-]
-
-def get_color(tag_id):
-    return colores[tag_id % len(colores)]  
 
 def capturar_frames():
     global frame_actual
@@ -34,44 +23,11 @@ def capturar_frames():
 
 threading.Thread(target=capturar_frames, daemon=True).start()
 
-def detectar_apriltags(frame):
-    global coordenadas
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (3, 3), 0)
-    detecciones = detector.detect(gray)
-
-    for tag in detecciones:
-        (ptA, ptB, ptC, ptD) = tag.corners
-        centro = np.mean([ptA, ptB, ptC, ptD], axis=0).astype(int)
-        tag_id = tag.tag_id
-
-        if tag_id not in coordenadas:
-            coordenadas[tag_id] = []
-
-        coordenadas[tag_id].append(tuple(centro))
-
-        if len(coordenadas[tag_id]) > 50:
-            coordenadas[tag_id].pop(0)
-
-        ptA, ptB, ptC, ptD = map(lambda p: (int(p[0]), int(p[1])), [ptA, ptB, ptC, ptD])
-
-        cv2.line(frame, ptA, ptB, (0, 255, 0), 2)
-        cv2.line(frame, ptB, ptC, (0, 255, 0), 2)
-        cv2.line(frame, ptC, ptD, (0, 255, 0), 2)
-        cv2.line(frame, ptD, ptA, (0, 255, 0), 2)
-
-        cv2.putText(frame, f"ID: {tag_id}", (ptA[0], ptA[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
-    return frame
-
 def update_video():
     with lock:
         frame = frame_actual.copy() if frame_actual is not None else None
 
     if frame is not None:
-        frame = detectar_apriltags(frame)
-
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(frame_rgb)
         img = img.resize((video_canvas.winfo_width(), video_canvas.winfo_height()))
@@ -84,34 +40,17 @@ def update_video():
     app.after(10, update_video)
 
 def update_map():
-    campo.delete("all") 
+    campo.delete("all")
 
     x_campo = campo.winfo_width()
     y_campo = campo.winfo_height()
-    cam_x, cam_y = 640, 480
-    
-    #cargamos imagen   
-    img_PIL = Image.open("campo.jpg").resize((x_campo,y_campo))
+
+    img_PIL = Image.open("campo.jpg").resize((x_campo, y_campo))
     img_campo = ImageTk.PhotoImage(img_PIL)
-    
-    #dibujar el campo
+
     campo.create_image(0, 0, anchor="nw", image=img_campo)
     campo.image = img_campo
     campo.lower("all")
-    
-    radio = 20
-
-    for tag_id, coords in coordenadas.items():
-        if coords:
-            x, y = coords[-1] 
-            x = int(x / cam_x * x_campo)
-            y = int(y / cam_y * y_campo)
-            
-            color = get_color(tag_id) 
-            campo.create_oval(x - radio, y - radio, x + radio, y + radio, fill=color, outline="white", width=5)
-
-            campo.create_text(x, y, text=str(tag_id), fill="black", font=("Arial", 14, "bold"))
-
 
 def grabar_video():
     global grabando
@@ -130,7 +69,6 @@ def grabar_video():
         with lock:
             frame = frame_actual.copy() if frame_actual is not None else None
         if frame is not None:
-            frame = detectar_apriltags(frame)
             out.write(frame)
             cv2.imshow("Grabando...", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -146,16 +84,14 @@ def cerrar_app():
     app.destroy()
 
 app = customtkinter.CTk()
-app.configure(fg_color="#03539e") 
+app.configure(fg_color="#03539e")
 app.title("aaaa")
 app.geometry("800x700")
-
 
 titulo_frame = customtkinter.CTkFrame(app)
 titulo_frame.grid(row=0, column=0, columnspan=2, pady=10, sticky="ew")
 titulo_frame.columnconfigure([0, 1, 2], weight=1)
 titulo_frame.configure(fg_color="#03539e")
-
 
 logo_img = Image.open(logo_path).resize((200, 85), Image.Resampling.LANCZOS)
 logo_tk = ImageTk.PhotoImage(logo_img)
@@ -174,7 +110,7 @@ def actualizar_reloj():
     reloj_label.configure(text=hora_actual)
     app.after(1000, actualizar_reloj)
 
-actualizar_reloj()  
+actualizar_reloj()
 
 app.grid_rowconfigure(1, weight=1)
 app.grid_rowconfigure(2, weight=1)
@@ -186,14 +122,13 @@ video_canvas.grid(row=1, column=0, columnspan=3, sticky="nsew", padx=10, pady=10
 campo = customtkinter.CTkCanvas(app, width=640, height=480, bg="white")
 campo.grid(row=2, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
 
-
-
 '''
 record_button = customtkinter.CTkButton(app, text="Grabar 15s", command=grabar_video, width=200, height=50)
 record_button.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 
 exit_button = customtkinter.CTkButton(app, text="Salir", command=cerrar_app, width=200, height=50)
-exit_button.grid(row=2, column=2, padx=10, pady=10, sticky="ew")'''
+exit_button.grid(row=2, column=2, padx=10, pady=10, sticky="ew")
+'''
 
 update_video()
 app.protocol("WM_DELETE_WINDOW", cerrar_app)
