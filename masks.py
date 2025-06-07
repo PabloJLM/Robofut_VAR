@@ -4,7 +4,7 @@ from collections import deque
 
 # Ajustes
 WIDTH, HEIGHT = 800, 400
-FPS = 30  # Fijo para evitar errores con RTSP
+FPS = 25  # Fijo para evitar errores con RTSP
 
 # Inicializaciones
 estela = deque(maxlen=10)
@@ -76,6 +76,7 @@ while True:
 
     # Mostrar
     cv2.imshow("VAR", frame)
+    #cv2.imshow("masked2", masked2)
 
     key = cv2.waitKey(1) & 0xFF
     if key == ord('q'):

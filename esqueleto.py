@@ -2,6 +2,8 @@ import customtkinter
 from PIL import Image, ImageTk
 import time
 import subprocess
+import sys
+import os
 
 
 logo_path = "logo.png"
@@ -37,13 +39,18 @@ def ver_campo():
     view.lift()                
     view.focus_force()        
     view.grab_set()   
+
+def seleccion_porterias():
+    from porterias import VentanaPorterias
+    port = VentanaPorterias()
+    port.lift()                
+    port.focus_force()        
+    port.grab_set()  
     
 def Abrir_VAR():
-    from var import VAR
-    var_aux = VAR()
-    var_aux.lift()                
-    var_aux.focus_force()        
-    var_aux.grab_set()    
+    ruta = os.path.abspath("masks.py")
+    subprocess.Popen([sys.executable, ruta])
+    
 
 
 def dummy_func():
@@ -103,7 +110,7 @@ canvas_central.bind("<Configure>", update_imagen_central)  # Escalar imagen al c
 # Fila 2: botones
 boton_seleccion = customtkinter.CTkButton(app, text="Seleccion de campo", command=abrir_seleccion_campo, width=200, height=60, font=("Arial", 18), corner_radius=10,fg_color="#02080F",hover_color="#022E51",text_color="white")   
 boton_VAR = customtkinter.CTkButton(app, text="VAR", command=Abrir_VAR, width=200, height=60, font=("Arial", 18), corner_radius=10,fg_color="#02080F",hover_color="#022E51",text_color="white")
-boton_grabaciones = customtkinter.CTkButton(app, text="Grabaciones", command=dummy_func, width=200, height=60, font=("Arial", 18), corner_radius=10,fg_color="#02080F",hover_color="#022E51",text_color="white")
+boton_grabaciones = customtkinter.CTkButton(app, text="Grabaciones", command=seleccion_porterias, width=200, height=60, font=("Arial", 18), corner_radius=10,fg_color="#02080F",hover_color="#022E51",text_color="white")
 boton_vercampo = customtkinter.CTkButton(app, text="Ver Campo", command=ver_campo, width=200, height=60, font=("Arial", 18), corner_radius=10,fg_color="#02080F",hover_color="#022E51",text_color="white")
 #boton4 = customtkinter.CTkButton(app, text="Salir", command=app.destroy, width=200, height=60, font=("Arial", 18), corner_radius=10,fg_color="#02080F",hover_color="#022E51",text_color="white")
 #grid de botones
