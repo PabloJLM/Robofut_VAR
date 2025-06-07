@@ -1,17 +1,19 @@
 import cv2
 import numpy as np
 from collections import deque
+import os
 
 # Ajustes
 WIDTH, HEIGHT = 800, 400
-FPS = 25  # Fijo para evitar errores con RTSP
+FPS = 25
+DURACION = 10  # segundos de grabación
+FRAMES_UMBRAL = FPS * DURACION
 
 # Inicializaciones
-estela = deque(maxlen=10)
-buffer_frames = deque(maxlen=int(FPS * 10))
-
+buffer_frames = deque(maxlen=FRAMES_UMBRAL)
 cap = cv2.VideoCapture("rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2")
 
+# Homografía
 pts_src = np.load("esquinas.npy")
 pts_dst = np.float32([
     [0, 0],
@@ -21,11 +23,29 @@ pts_dst = np.float32([
 ])
 M = cv2.getPerspectiveTransform(pts_src, pts_dst)
 
-if not cap.isOpened():
-    print("Error al abrir RTSP")
-    exit()
+# Cargar portería A
+porterias = np.load("porterias.npy", allow_pickle=True).item()
+p1, p2 = tuple(porterias["porteria_A"][0]), tuple(porterias["porteria_A"][1])
 
-print("Presiona 'g' para guardar últimos 10s - 'q' para salir")
+# Estado de grabación
+contador_goles_A = 1
+ultimo_frame_gol = -FRAMES_UMBRAL
+frame_actual = 0
+
+print("Presiona 'q' para salir")
+
+# Función para verificar si un punto está al otro lado de una línea
+def punto_cruza_linea(punto, linea_p1, linea_p2):
+    A = np.array(linea_p1)
+    B = np.array(linea_p2)
+    P = np.array(punto)
+    AB = B - A
+    AP = P - A
+    cross = np.cross(AB, AP)
+    return cross > 0  # o < 0 dependiendo de orientación
+
+# Valor anterior del lado para detectar cruce
+lado_anterior = None
 
 while True:
     ret, frame = cap.read()
@@ -35,20 +55,24 @@ while True:
 
     frame = cv2.warpPerspective(frame, M, (WIDTH, HEIGHT))
 
-    # Detección
+    # Dibujar portería
+    cv2.line(frame, p1, p2, (0, 255, 0), 2)
+    cv2.putText(frame, "Porteria A", p1, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+
+    # Detección de pelota
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     mask1 = cv2.inRange(hsv, np.array([0, 76, 90]), np.array([179, 255, 255]))
     masked1 = cv2.bitwise_and(frame, frame, mask=mask1)
     mask2 = cv2.inRange(masked1, np.array([0, 0, 80]), np.array([140, 255, 255]))
-    masked2 = cv2.bitwise_and(masked1, masked1, mask=mask2)
-
     blur = cv2.GaussianBlur(mask2, (9, 9), 0)
     kernel = np.ones((5, 5), np.uint8)
     clean = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)
 
     contours, _ = cv2.findContours(clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    pelota_detectada = False
+    centro = None
+    cruzo_porteria = False
+
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area < 200: continue
@@ -61,41 +85,39 @@ while True:
             cv2.circle(frame, centro, int(radio), (0, 255, 0), 2)
             cv2.circle(frame, centro, 3, (0, 0, 255), -1)
             cv2.putText(frame, f"({int(x)}, {int(y)})", (int(x)+10, int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
-            pelota_detectada = True
-            estela.appendleft(centro)
-            break
-    if not pelota_detectada:
-        estela.appendleft(None)
 
-    for i in range(1, len(estela)):
-        if estela[i - 1] and estela[i]:
-            cv2.line(frame, estela[i - 1], estela[i], (255, 0, 255), 3)
+            # Verificar cruce con línea
+            lado_actual = punto_cruza_linea(centro, p1, p2)
 
-    # Almacenar frame final en buffer
+            if lado_anterior is not None and lado_actual != lado_anterior:
+                cruzo_porteria = True
+                break  # Ya encontramos cruce, no necesitamos más
+
+            lado_anterior = lado_actual
+            break  # Solo tomamos la pelota más circular
+
+    # Grabar si cruzó la portería y han pasado suficientes frames desde el último gol
+    if cruzo_porteria and frame_actual - ultimo_frame_gol >= FRAMES_UMBRAL:
+        nombre = f"grabacion{contador_goles_A}A.mp4"
+        print(f"Gol en Portería A → guardando como {nombre}")
+        codec = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(nombre, codec, FPS, (WIDTH, HEIGHT))
+        for f in buffer_frames:
+            out.write(f)
+        out.release()
+        print(f"Guardado correctamente")
+        contador_goles_A += 1
+        ultimo_frame_gol = frame_actual
+
+    # Guardar frame en buffer
     buffer_frames.append(frame.copy())
 
     # Mostrar
     cv2.imshow("VAR", frame)
-    #cv2.imshow("masked2", masked2)
+    frame_actual += 1
 
-    key = cv2.waitKey(1) & 0xFF
-    if key == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    elif key == ord('g'):
-        if len(buffer_frames) < int(FPS * 3):  # Mínimo 3s de contenido
-            print("Muy pocos frames para grabar. Espera unos segundos más.")
-            continue
-
-        print("Guardando últimos 10 segundos...")
-
-        codec = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter("grabacion.mp4", codec, FPS, (WIDTH, HEIGHT))
-
-        for f in buffer_frames:
-            out.write(f)
-
-        out.release()
-        print("Grabado como 'grabacion.mp4'")
 
 cap.release()
 cv2.destroyAllWindows()

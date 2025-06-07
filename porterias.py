@@ -16,6 +16,17 @@ class VentanaPorterias(customtkinter.CTkToplevel):
 
         self.puntos = []  # Esperamos 4 puntos (2 líneas)
         self.cap = cv2.VideoCapture("rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2")
+
+        # Cargar homografía
+        self.pts_src = np.load("esquinas.npy")
+        self.pts_dst = np.float32([
+            [0, 0],
+            [800 - 1, 0],
+            [800 - 1, 400 - 1],
+            [0, 400 - 1]
+        ])
+        self.M = cv2.getPerspectiveTransform(self.pts_src, self.pts_dst)
+
         self.after(100, self.actualizar_frame)
 
     def actualizar_frame(self):
@@ -24,7 +35,9 @@ class VentanaPorterias(customtkinter.CTkToplevel):
             self.after(100, self.actualizar_frame)
             return
 
-        # Dibujar líneas solo si hay pares completos
+        frame = cv2.warpPerspective(frame, self.M, (800, 400))  # Aplana el campo
+
+        # Dibujar líneas si ya hay puntos
         if len(self.puntos) >= 2:
             cv2.line(frame, self.puntos[0], self.puntos[1], (0, 255, 0), 3)
             cv2.putText(frame, "Porteria A", self.puntos[0], cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
@@ -42,11 +55,11 @@ class VentanaPorterias(customtkinter.CTkToplevel):
 
     def on_click(self, event):
         if len(self.puntos) >= 4:
-            return  # No más de 4 puntos
+            return
 
-        # Coordenadas del click adaptadas al tamaño real del frame
-        x = int(event.x * self.cap.get(cv2.CAP_PROP_FRAME_WIDTH) / self.canvas.winfo_width())
-        y = int(event.y * self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT) / self.canvas.winfo_height())
+        # Ajustar coordenadas del click al frame ya aplanado
+        x = int(event.x * 800 / self.canvas.winfo_width())
+        y = int(event.y * 400 / self.canvas.winfo_height())
         self.puntos.append((x, y))
         print(f"Punto {len(self.puntos)}: ({x}, {y})")
 
