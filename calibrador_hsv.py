@@ -2,27 +2,14 @@ import cv2
 import numpy as np
 import customtkinter as ctk
 from PIL import Image, ImageTk
-import pickle
-import os
 
 RTSP_URL = "rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2"
-archivo_calibracion = "calibration_data/calibration_matrices.p"
-if not os.path.exists(archivo_calibracion):
-    print(f"Error: No se encontró {archivo_calibracion}. Primero calibra la cámara.")
-    exit()
-
-with open(archivo_calibracion, "rb") as f:
-    datos_calibracion = pickle.load(f)
-    matriz = datos_calibracion["mtx"]
-    distorsion = datos_calibracion["dist"]
-
 
 class Principal:
     def __init__(self, root):
         self.root = root
         self.root.title("Calibrador de HSV")
 
-        # Configuración inicial de tamaño
         self.frame_width = 640
         self.frame_height = 480
 
@@ -53,7 +40,7 @@ class Principal:
             self.entries[name].grid(row=i, column=3, padx=5, pady=5)
             self.entries[name].insert(0, str(int(self.sliders[name].get())))
             self.entries[name].bind("<Return>", self.update_from_entry)
-            
+
         self.sliders["Hue Min"].set(0)
         self.sliders["Hue Max"].set(179)
         self.sliders["Sat Min"].set(0)
@@ -68,15 +55,12 @@ class Principal:
         if not self.cap.isOpened():
             print("Error: No se pudo conectar a la cámara IP")
 
-        # Detectar cambios de tamaño de ventana
         self.root.bind("<Configure>", self.resize_window)
-        
         self.update_frame()
 
     def resize_window(self, event=None):
-        """ Ajusta el tamaño del frame según el tamaño de la ventana """
-        self.frame_width = self.root.winfo_width() - 20  # Ajuste de margen
-        self.frame_height = self.root.winfo_height() - 50  # Ajuste de margen
+        self.frame_width = self.root.winfo_width() - 20
+        self.frame_height = self.root.winfo_height() - 50
 
     def update_values(self, _=None):
         for name in self.labels:
@@ -98,26 +82,26 @@ class Principal:
     def update_frame(self):
         ret, frame = self.cap.read()
         if ret:
-            frame = cv2.undistort(frame, matriz, distorsion, None, matriz)
-            # Redimensiona el frame al tamaño de la ventana
             frame = cv2.resize(frame, (self.frame_width, self.frame_height))
 
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            low = np.array([0,76,90])
-            up = np.array([179,255,255])
-            
-            mascara1 = cv2.inRange(hsv,low,up)
+            low = np.array([0, 76, 90])
+            up = np.array([179, 255, 255])
+
+            mascara1 = cv2.inRange(hsv, low, up)
             andmascara1 = cv2.bitwise_and(frame, frame, mask=mascara1)
-            gblurr = cv2.GaussianBlur(andmascara1, (9,9), 0)
-            kernel = np.ones((5,5), np.uint8)
+            gblurr = cv2.GaussianBlur(andmascara1, (9, 9), 0)
+            kernel = np.ones((5, 5), np.uint8)
             limpieza = cv2.morphologyEx(gblurr, cv2.MORPH_OPEN, kernel)
 
-            lower_bound = np.array([int(self.sliders["Hue Min"].get()), 
-                                    int(self.sliders["Sat Min"].get()), 
-                                    int(self.sliders["Val Min"].get())])
-            upper_bound = np.array([int(self.sliders["Hue Max"].get()), 
-                                    int(self.sliders["Sat Max"].get()), 
-                                    int(self.sliders["Val Max"].get())])
+            lower_bound = np.array([
+                int(self.sliders["Hue Min"].get()),
+                int(self.sliders["Sat Min"].get()),
+                int(self.sliders["Val Min"].get())])
+            upper_bound = np.array([
+                int(self.sliders["Hue Max"].get()),
+                int(self.sliders["Sat Max"].get()),
+                int(self.sliders["Val Max"].get())])
 
             mask = cv2.inRange(limpieza, lower_bound, upper_bound)
             result = cv2.bitwise_and(limpieza, limpieza, mask=mask)
@@ -136,11 +120,11 @@ class Principal:
         self.cap.release()
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     ctk.set_appearance_mode("dark")
-
     root = ctk.CTk()
-    root.geometry("800x600")  # Tamaño inicial
-    root.attributes('-fullscreen', False)  # Puedes cambiarlo a True para iniciar en pantalla completa
+    root.geometry("800x600")
+    root.attributes('-fullscreen', False)
     app = Principal(root)
     app.run()
