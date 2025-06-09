@@ -3,19 +3,19 @@ import numpy as np
 from collections import deque
 from playsound import playsound
 import threading
+import os
 
-# Configuración
+# Config
 WIDTH, HEIGHT = 800, 400
 FPS = 25
 DURACION = 10  # segundos antes del gol
 FRAMES_UMBRAL = FPS * DURACION
 FRAMES_EXTRA = 3 * FPS  # segundos después del gol
 
-# Inicialización
 cap = cv2.VideoCapture("rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2")
 buffer_frames = deque(maxlen=FRAMES_UMBRAL)
 
-# Cargar esquinas y homografía
+
 pts_src = np.load("esquinas.npy")
 pts_dst = np.float32([
     [0, 0],
@@ -25,12 +25,11 @@ pts_dst = np.float32([
 ])
 M = cv2.getPerspectiveTransform(pts_src, pts_dst)
 
-# Cargar porterías
 porterias = np.load("porterias.npy", allow_pickle=True).item()
 p1_A, p2_A = tuple(porterias["porteria_A"][0]), tuple(porterias["porteria_A"][1])
 p1_B, p2_B = tuple(porterias["porteria_B"][0]), tuple(porterias["porteria_B"][1])
 
-# Estados
+
 contador_A = 1
 contador_B = 1
 ultimo_gol_A = -FRAMES_UMBRAL
@@ -43,15 +42,16 @@ post_gol_restante_A = 0
 post_gol_restante_B = 0
 frame_actual = 0
 
-# Función cruce
+
 def punto_cruza_linea(punto, p1, p2):
     A, B, P = np.array(p1), np.array(p2), np.array(punto)
     AB, AP = B - A, P - A
     return np.cross(AB, AP) > 0
 
-# Sonido (en hilo aparte para no trabar video)
+# Sonido
 def reproducir_sonido():
-    threading.Thread(target=playsound, args=("gol.mp3",), daemon=True).start()
+    sonido = os.path.join(os.path.dirname(__file__), "gol.mp3")
+    threading.Thread(target=playsound, args=(sonido,), daemon=True).start()
 
 print("Presiona 'q' para salir")
 
@@ -63,11 +63,10 @@ while True:
 
     frame = cv2.warpPerspective(frame, M, (WIDTH, HEIGHT))
 
-    # Dibujar porterías
     cv2.line(frame, p1_A, p2_A, (0, 255, 0), 2)
     cv2.putText(frame, "Porteria A", p1_A, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
     cv2.line(frame, p1_B, p2_B, (255, 0, 0), 2)
-    cv2.putText(frame, "Porteria B", p1_B, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,0,0), 2)
+    cv2.putText(frame, "Porteria B", p1_B, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 2)
 
     # Detección de pelota
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -99,7 +98,7 @@ while True:
         lado_actual_A = punto_cruza_linea(centro, p1_A, p2_A)
         if lado_anterior_A is not None and lado_actual_A != lado_anterior_A:
             if frame_actual - ultimo_gol_A >= FRAMES_UMBRAL:
-                print("⚽ Gol en Portería A")
+                print("Gol en Portería A")
                 post_gol_restante_A = FRAMES_EXTRA
                 ultimo_gol_A = frame_actual
                 reproducir_sonido()
@@ -109,7 +108,7 @@ while True:
         lado_actual_B = punto_cruza_linea(centro, p1_B, p2_B)
         if lado_anterior_B is not None and lado_actual_B != lado_anterior_B:
             if frame_actual - ultimo_gol_B >= FRAMES_UMBRAL:
-                print("⚽ Gol en Portería B")
+                print("Gol en Portería B")
                 post_gol_restante_B = FRAMES_EXTRA
                 ultimo_gol_B = frame_actual
                 reproducir_sonido()
@@ -124,12 +123,12 @@ while True:
         post_gol_restante_A -= 1
         if post_gol_restante_A == 0:
             nombre = f"grabacion{contador_A}A.mp4"
-            print(f"💾 Guardando {nombre}")
+            print(f"Guardando {nombre}")
             out = cv2.VideoWriter(nombre, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (WIDTH, HEIGHT))
             for f in buffer_frames: out.write(f)
             for f in frames_post_A: out.write(f)
             out.release()
-            print("✅ Guardado A")
+            print("Guardado A")
             contador_A += 1
             frames_post_A.clear()
 
@@ -139,12 +138,12 @@ while True:
         post_gol_restante_B -= 1
         if post_gol_restante_B == 0:
             nombre = f"grabacion{contador_B}B.mp4"
-            print(f"💾 Guardando {nombre}")
+            print(f"Guardando {nombre}")
             out = cv2.VideoWriter(nombre, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (WIDTH, HEIGHT))
             for f in buffer_frames: out.write(f)
             for f in frames_post_B: out.write(f)
             out.release()
-            print("✅ Guardado B")
+            print("Guardado B")
             contador_B += 1
             frames_post_B.clear()
 
