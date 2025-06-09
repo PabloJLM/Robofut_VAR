@@ -23,7 +23,7 @@ def actualizar_reloj():
     reloj_label.configure(text=hora_actual)
     app.after(1000, actualizar_reloj)
 
-# Funciones de prueba que no abren nada
+# Funciones de prueba
 def abrir_seleccion_campo():
     print("Simulando abrir selección de campo")
 
@@ -52,7 +52,7 @@ def update_imagen_central(event=None):
     canvas_central.create_image(0, 0, anchor="nw", image=img_central_tk)
     canvas_central.image = img_central_tk
 
-# Crear ventana principal
+# ventana principal
 app = customtkinter.CTk()
 app.title("Ventana Principal")
 ancho = app.winfo_screenwidth()
@@ -60,7 +60,6 @@ alto = app.winfo_screenheight()
 app.geometry(f"{ancho}x{alto}+0+0")
 app.configure(fg_color="#1725a5")
 
-# Configurar la cuadrícula
 for i in range(4):
     app.grid_columnconfigure(i, weight=1)
 app.grid_rowconfigure(1, weight=3)
@@ -93,13 +92,12 @@ boton_porterias = customtkinter.CTkButton(app, text="Porterias", command=selecci
 boton_vercampo = customtkinter.CTkButton(app, text="Ver Campo", command=ver_campo, width=200, height=60, font=("Arial", 18), corner_radius=10, fg_color="#02080F", hover_color="#022E51", text_color="white")
 boton_grabaciones = customtkinter.CTkButton(app, text="Grabaciones", command=abrir_grabaciones, width=200, height=60, font=("Arial", 18), corner_radius=10, fg_color="#02080F", hover_color="#022E51", text_color="white")
 
-# Posicionar botones
+# botones
 boton_seleccion.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 boton_VAR.grid(row=2, column=1, padx=10, pady=10, sticky="ew")
 boton_porterias.grid(row=2, column=2, padx=10, pady=10, sticky="ew")
 boton_vercampo.grid(row=2, column=3, padx=10, pady=10, sticky="ew")
 boton_grabaciones.grid(row=3, column=1, columnspan=2, padx=10, pady=10, sticky="ew")
 
-# Iniciar reloj y mainloop
 actualizar_reloj()
 app.mainloop()
