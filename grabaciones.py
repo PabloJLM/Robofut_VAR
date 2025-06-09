@@ -19,7 +19,7 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
         self.cap = None
         self.running = False
         self.paused = False
-        self.velocidad = 1.0  # Velocidad inicial (1x)
+        self.velocidad = 1.0  # Velocidad inicial 
 
         self.label = customtkinter.CTkLabel(self, text="Selecciona la carpeta de grabaciones", font=("Arial", 16))
         self.label.pack(pady=10)
@@ -27,24 +27,21 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
         self.boton_seleccionar = customtkinter.CTkButton(self, text="Seleccionar carpeta", command=self.seleccionar_carpeta)
         self.boton_seleccionar.pack(pady=5)
 
-        # Marco del video
         self.video_frame = customtkinter.CTkFrame(self, height=360, width=640)
         self.video_frame.pack(pady=10)
         self.video_label = customtkinter.CTkLabel(self.video_frame, text="")
         self.video_label.pack()
 
-        # Controles de reproducción
         controles_frame = customtkinter.CTkFrame(self)
         controles_frame.pack(pady=5)
 
         self.boton_pausa = customtkinter.CTkButton(controles_frame, text="Pausar", command=self.toggle_pausa)
         self.boton_pausa.pack(side="left", padx=10)
 
-        self.selector_velocidad = customtkinter.CTkOptionMenu(controles_frame, values=["0.5x", "1x", "1.5x", "2x"], command=self.cambiar_velocidad)
+        self.selector_velocidad = customtkinter.CTkOptionMenu(controles_frame, values=["0.25x", "0.5x", "1x", "2x"], command=self.cambiar_velocidad)
         self.selector_velocidad.set("1x")
         self.selector_velocidad.pack(side="left", padx=10)
 
-        # Scroll 
         self.scroll = customtkinter.CTkScrollableFrame(self, width=850, height=280)
         self.scroll.pack(pady=10, expand=True)
 
@@ -74,7 +71,7 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
         archivos = [f for f in os.listdir(self.var_folder) if f.lower().endswith(('.mp4', '.avi', '.mov', '.mkv'))]
 
         if not archivos:
-            customtkinter.CTkLabel(self.scroll, text="No hay videos en esta carpeta.", font=("Arial", 14)).pack(pady=10)
+            customtkinter.CTkLabel(self.scroll, text="No hay videos xd", font=("Arial", 14)).pack(pady=10)
             return
 
         for archivo in archivos:
@@ -133,7 +130,7 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
                 self.video_label.configure(image=img_tk)
                 self.video_label.image = img_tk
                 self.update_idletasks()
-            time.sleep(1 / (30 * self.velocidad))  # Ajuste según velocidad
+            time.sleep(1 / (30 * self.velocidad))  
 
     def cerrar_video(self):
         self.running = False
@@ -147,14 +144,13 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
 
     def cambiar_velocidad(self, value):
         velocidades = {
+            "0.25x": 0.25,
             "0.5x": 0.5,
             "1x": 1.0,
-            "1.5x": 1.5,
             "2x": 2.0
         }
         self.velocidad = velocidades.get(value, 1.0)
 
-# Ejecutar ventana si se llama directamente
 if __name__ == "__main__":
     app = customtkinter.CTk()
     app.withdraw()
