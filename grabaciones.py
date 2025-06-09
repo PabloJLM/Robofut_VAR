@@ -4,12 +4,13 @@ from PIL import Image
 import os
 import cv2
 import threading
+import time
 
 class VentanaGrabaciones(customtkinter.CTkToplevel):
     def __init__(self):
         super().__init__()
         self.title("Grabaciones VAR")
-        self.geometry("900x700")
+        self.geometry("900x750")
         self.configure(fg_color="#1b1f2b")
 
         self.var_folder = None
@@ -17,6 +18,8 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
         self.video_thread = None
         self.cap = None
         self.running = False
+        self.paused = False
+        self.velocidad = 1.0  # Velocidad inicial (1x)
 
         self.label = customtkinter.CTkLabel(self, text="Selecciona la carpeta de grabaciones", font=("Arial", 16))
         self.label.pack(pady=10)
@@ -29,6 +32,17 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
         self.video_frame.pack(pady=10)
         self.video_label = customtkinter.CTkLabel(self.video_frame, text="")
         self.video_label.pack()
+
+        # Controles de reproducción
+        controles_frame = customtkinter.CTkFrame(self)
+        controles_frame.pack(pady=5)
+
+        self.boton_pausa = customtkinter.CTkButton(controles_frame, text="Pausar", command=self.toggle_pausa)
+        self.boton_pausa.pack(side="left", padx=10)
+
+        self.selector_velocidad = customtkinter.CTkOptionMenu(controles_frame, values=["0.5x", "1x", "1.5x", "2x"], command=self.cambiar_velocidad)
+        self.selector_velocidad.set("1x")
+        self.selector_velocidad.pack(side="left", padx=10)
 
         # Scroll 
         self.scroll = customtkinter.CTkScrollableFrame(self, width=850, height=280)
@@ -48,7 +62,6 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
     def cerrar_ventana(self):
         self.cerrar_video()
         self.destroy()
-
 
     def mostrar_videos(self):
         for widget in self.scroll.winfo_children():
@@ -102,22 +115,25 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
         self.cerrar_video()
         self.cap = cv2.VideoCapture(ruta_video)
         self.running = True
+        self.paused = False
+        self.boton_pausa.configure(text="Pausar")
         self.video_thread = threading.Thread(target=self.actualizar_frame, daemon=True)
         self.video_thread.start()
 
     def actualizar_frame(self):
-        while self.running and self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if not ret:
-                break
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = cv2.resize(frame, (640, 360))
-            img = Image.fromarray(frame)
-            img_tk = customtkinter.CTkImage(light_image=img, dark_image=img, size=(640, 360))
-            self.video_label.configure(image=img_tk)
-            self.video_label.image = img_tk
-            self.update()
-            cv2.waitKey(30)
+        while self.running and self.cap and self.cap.isOpened():
+            if not self.paused:
+                ret, frame = self.cap.read()
+                if not ret:
+                    break
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(frame, (640, 360))
+                img = Image.fromarray(frame)
+                img_tk = customtkinter.CTkImage(light_image=img, dark_image=img, size=(640, 360))
+                self.video_label.configure(image=img_tk)
+                self.video_label.image = img_tk
+                self.update_idletasks()
+            time.sleep(1 / (30 * self.velocidad))  # Ajuste según velocidad
 
     def cerrar_video(self):
         self.running = False
@@ -125,6 +141,20 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
             self.cap.release()
             self.cap = None
 
+    def toggle_pausa(self):
+        self.paused = not self.paused
+        self.boton_pausa.configure(text="Reanudar" if self.paused else "Pausar")
+
+    def cambiar_velocidad(self, value):
+        velocidades = {
+            "0.5x": 0.5,
+            "1x": 1.0,
+            "1.5x": 1.5,
+            "2x": 2.0
+        }
+        self.velocidad = velocidades.get(value, 1.0)
+
+# Ejecutar ventana si se llama directamente
 if __name__ == "__main__":
     app = customtkinter.CTk()
     app.withdraw()
