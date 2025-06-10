@@ -48,7 +48,7 @@ def seleccion_porterias():
     port.grab_set()  
     
 def Abrir_VAR():
-    ruta = os.path.abspath("masks.py")
+    ruta = os.path.abspath("VAR.py")
     subprocess.Popen([sys.executable, ruta])
 
 def abrir_grabaciones():
