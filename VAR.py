@@ -10,7 +10,7 @@ DURACION = 10
 FRAMES_UMBRAL = FPS * DURACION
 FRAMES_EXTRA = 3 * FPS
 VIDEO_PATH = "rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2"
-
+historial_pelota = deque(maxlen=10)
 
 def reproducir_sonido():
     pygame.mixer.init()
@@ -80,20 +80,25 @@ def main():
             cv2.circle(frame_aplanado, centro, radio, (0,255,0), 2)
             cv2.circle(frame_aplanado, centro, 3, (0,0,255), -1)
 
-            if pelota_anterior:
-                if cruzo_linea(centro, pelota_anterior, p1_A, p2_A) and frame_actual - ultimo_gol_A >= FRAMES_UMBRAL:
+            # Agregar centro al historial
+            historial_pelota.append(centro)
+
+            # Revisar cruce con la estela
+            for punto_prev in historial_pelota:
+                if cruzo_linea(centro, punto_prev, p1_A, p2_A) and frame_actual - ultimo_gol_A >= FRAMES_UMBRAL:
                     print("¡GOL en Portería A!")
                     reproducir_sonido()
                     post_gol_restante_A = FRAMES_EXTRA
                     ultimo_gol_A = frame_actual
+                    break  # Evita múltiples detecciones en el mismo frame
 
-                if cruzo_linea(centro, pelota_anterior, p1_B, p2_B) and frame_actual - ultimo_gol_B >= FRAMES_UMBRAL:
+                if cruzo_linea(centro, punto_prev, p1_B, p2_B) and frame_actual - ultimo_gol_B >= FRAMES_UMBRAL:
                     print("¡GOL en Portería B!")
                     reproducir_sonido()
                     post_gol_restante_B = FRAMES_EXTRA
                     ultimo_gol_B = frame_actual
+                    break
 
-            pelota_anterior = centro
 
         buffer_frames.append(frame_aplanado.copy())
 
