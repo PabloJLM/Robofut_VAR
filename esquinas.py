@@ -54,33 +54,64 @@ class VentanaEsquinas(customtkinter.CTkToplevel):
             fg = cv2.bitwise_and(self.guia, self.guia, mask=mask)
             frame[cy:cy + h_guia, cx:cx + w_guia] = cv2.add(bg, fg)
 
-        # Dibujar los puntos
+        # Dibujar puntos seleccionados
         for p in self.puntos:
             cv2.circle(frame, p, 6, (0, 255, 0), -1)
 
+        # Convertir y redimensionar manteniendo proporciones
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(frame_rgb)
-        img = img.resize((self.canvas.winfo_width(), self.canvas.winfo_height()))
-        self.img_tk = ImageTk.PhotoImage(img)
 
+        canvas_w = self.canvas.winfo_width()
+        canvas_h = self.canvas.winfo_height()
+        img_w, img_h = img.size
+
+        scale = min(canvas_w / img_w, canvas_h / img_h)
+        new_w = int(img_w * scale)
+        new_h = int(img_h * scale)
+        img = img.resize((new_w, new_h), Image.LANCZOS)
+
+        # Crear fondo negro con márgenes y pegar la imagen centrada
+        fondo = Image.new("RGB", (canvas_w, canvas_h), (0, 0, 0))
+        offset_x = (canvas_w - new_w) // 2
+        offset_y = (canvas_h - new_h) // 2
+        fondo.paste(img, (offset_x, offset_y))
+
+        self.img_tk = ImageTk.PhotoImage(fondo)
         self.canvas.create_image(0, 0, anchor="nw", image=self.img_tk)
+
         self.after(30, self.actualizar_frame)
+
 
     def on_click(self, event):
         if len(self.puntos) >= 4:
             return
 
-        # Convertir coordenadas del canvas a coordenadas del frame
-        x = int(event.x * self.cap.get(cv2.CAP_PROP_FRAME_WIDTH) / self.canvas.winfo_width())
-        y = int(event.y * self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT) / self.canvas.winfo_height())
+        canvas_w = self.canvas.winfo_width()
+        canvas_h = self.canvas.winfo_height()
+        ret, frame = self.cap.read()
+        if not ret:
+            return
 
-        self.puntos.append((x, y))
-        print(f"Punto {len(self.puntos)}: ({x}, {y})")
+        img_h, img_w = frame.shape[:2]
+        scale = min(canvas_w / img_w, canvas_h / img_h)
+        new_w = int(img_w * scale)
+        new_h = int(img_h * scale)
+        offset_x = (canvas_w - new_w) // 2
+        offset_y = (canvas_h - new_h) // 2
 
-        if len(self.puntos) == 4:
-            np.save("esquinas.npy", np.array(self.puntos, dtype=np.float32))
-            print("Esquinas guardadas en 'esquinas.npy'")
-            self.cerrar()
+        # Solo registrar puntos si están dentro del área de imagen
+        if offset_x <= event.x <= offset_x + new_w and offset_y <= event.y <= offset_y + new_h:
+            x = int((event.x - offset_x) / scale)
+            y = int((event.y - offset_y) / scale)
+            self.puntos.append((x, y))
+            print(f"Punto {len(self.puntos)}: ({x}, {y})")
+
+            if len(self.puntos) == 4:
+                np.save("esquinas.npy", np.array(self.puntos, dtype=np.float32))
+                print("Esquinas guardadas en 'esquinas.npy'")
+                self.cerrar()
+
 
     def cerrar(self):
         if self.cap.isOpened():
