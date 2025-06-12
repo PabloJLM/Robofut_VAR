@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from collections import deque
 import pygame
+import os
 
 WIDTH, HEIGHT = 800, 400
 FPS = 25
@@ -15,7 +16,8 @@ pygame.mixer.init()
 pygame.mixer.music.load("gol.mp3")
 
 def reproducir_sonido():
-    pygame.mixer.music.play()
+    if not pygame.mixer.music.get_busy():
+        pygame.mixer.music.play()
 
 def cruzo_linea(p_actual, p_anterior, p1, p2):
     def ccw(A, B, C):
@@ -42,7 +44,13 @@ def detectar_pelota(frame_aplanado, kernel):
             return (int(x), int(y)), int(radio), clean
     return None, 0, clean
 
+def reconectar_rtsp():
+    print("Reintentando conexión RTSP...")
+    return cv2.VideoCapture(VIDEO_PATH)
+
 def main():
+    os.makedirs("var", exist_ok=True)
+
     cap = cv2.VideoCapture(VIDEO_PATH)
     if not cap.isOpened():
         print("No se pudo abrir la cámara.")
@@ -51,11 +59,16 @@ def main():
     kernel = np.ones((5, 5), np.uint8)
     buffer_frames = deque(maxlen=FRAMES_UMBRAL)
 
-    pts_src = np.load("esquinas.npy")
+    try:
+        pts_src = np.load("esquinas.npy")
+        porterias = np.load("porterias.npy", allow_pickle=True).item()
+    except Exception as e:
+        print("Error cargando archivos:", e)
+        return
+
     pts_dst = np.float32([[0, 0], [WIDTH-1, 0], [WIDTH-1, HEIGHT-1], [0, HEIGHT-1]])
     M = cv2.getPerspectiveTransform(pts_src, pts_dst)
 
-    porterias = np.load("porterias.npy", allow_pickle=True).item()
     p1_A, p2_A = map(tuple, porterias["porteria_A"])
     p1_B, p2_B = map(tuple, porterias["porteria_B"])
 
@@ -65,7 +78,6 @@ def main():
     frames_post_A = []
     frames_post_B = []
 
-    # Filtro de Kalman
     kalman = cv2.KalmanFilter(4, 2)
     kalman.measurementMatrix = np.array([[1,0,0,0], [0,1,0,0]], np.float32)
     kalman.transitionMatrix = np.array([[1,0,1,0], [0,1,0,1], [0,0,1,0], [0,0,0,1]], np.float32)
@@ -74,88 +86,104 @@ def main():
     detectado = False
     pelota_anterior = None
     estela = deque(maxlen=20)
-
     frame_actual = 0
+    errores_lectura = 0
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            continue
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret or frame is None:
+                errores_lectura += 1
+                print(f"Error leyendo frame ({errores_lectura})")
+                if errores_lectura > 50:
+                    cap.release()
+                    cap = reconectar_rtsp()
+                    errores_lectura = 0
+                continue
+            errores_lectura = 0
 
-        frame_aplanado = cv2.warpPerspective(frame, M, (WIDTH, HEIGHT))
-        cv2.line(frame_aplanado, p1_A, p2_A, (0, 255, 0), 2)
-        cv2.line(frame_aplanado, p1_B, p2_B, (255, 0, 0), 2)
+            frame_aplanado = cv2.warpPerspective(frame, M, (WIDTH, HEIGHT))
+            cv2.line(frame_aplanado, p1_A, p2_A, (0, 255, 0), 2)
+            cv2.line(frame_aplanado, p1_B, p2_B, (255, 0, 0), 2)
 
-        centro, radio, mask_clean = detectar_pelota(frame_aplanado, kernel)
+            centro, radio, mask_clean = detectar_pelota(frame_aplanado, kernel)
 
-        if centro:
-            medida = np.array([[np.float32(centro[0])], [np.float32(centro[1])]])
-            kalman.correct(medida)
-            detectado = True
-        else:
-            detectado = False
+            if centro:
+                medida = np.array([[np.float32(centro[0])], [np.float32(centro[1])]])
+                kalman.correct(medida)
+                detectado = True
+            else:
+                detectado = False
 
-        prediccion = kalman.predict()
-        pred_x, pred_y = int(prediccion[0]), int(prediccion[1])
-        pelota_actual = (pred_x, pred_y)
+            prediccion = kalman.predict()
+            pred_x, pred_y = int(prediccion[0]), int(prediccion[1])
+            pelota_actual = (pred_x, pred_y)
 
-        # Dibujar la pelota y la estela
-        cv2.circle(frame_aplanado, pelota_actual, 10, (0, 0, 255), -1)
-        estela.appendleft(pelota_actual)
-        for i in range(1, len(estela)):
-            if estela[i - 1] and estela[i]:
-                cv2.line(frame_aplanado, estela[i - 1], estela[i], (0, 255, 255), 2)
+            cv2.circle(frame_aplanado, pelota_actual, 10, (0, 0, 255), -1)
+            estela.appendleft(pelota_actual)
+            for i in range(1, len(estela)):
+                if estela[i - 1] and estela[i]:
+                    cv2.line(frame_aplanado, estela[i - 1], estela[i], (0, 255, 255), 2)
 
-        # Lógica de gol
-        if pelota_anterior:
-            if cruzo_linea(pelota_actual, pelota_anterior, p1_A, p2_A) and frame_actual - ultimo_gol_A >= FRAMES_UMBRAL:
-                print("¡GOL en Portería A!")
-                reproducir_sonido()
-                post_gol_restante_A = FRAMES_EXTRA
-                ultimo_gol_A = frame_actual
+            if pelota_anterior:
+                if cruzo_linea(pelota_actual, pelota_anterior, p1_A, p2_A) and frame_actual - ultimo_gol_A >= FRAMES_UMBRAL:
+                    print("¡GOL en Portería A!")
+                    reproducir_sonido()
+                    post_gol_restante_A = FRAMES_EXTRA
+                    ultimo_gol_A = frame_actual
 
-            if cruzo_linea(pelota_actual, pelota_anterior, p1_B, p2_B) and frame_actual - ultimo_gol_B >= FRAMES_UMBRAL:
-                print("¡GOL en Portería B!")
-                reproducir_sonido()
-                post_gol_restante_B = FRAMES_EXTRA
-                ultimo_gol_B = frame_actual
+                if cruzo_linea(pelota_actual, pelota_anterior, p1_B, p2_B) and frame_actual - ultimo_gol_B >= FRAMES_UMBRAL:
+                    print("¡GOL en Portería B!")
+                    reproducir_sonido()
+                    post_gol_restante_B = FRAMES_EXTRA
+                    ultimo_gol_B = frame_actual
 
-        pelota_anterior = pelota_actual
-        buffer_frames.append(frame_aplanado.copy())
+            pelota_anterior = pelota_actual
+            buffer_frames.append(frame_aplanado.copy())
 
-        if post_gol_restante_A > 0:
-            frames_post_A.append(frame_aplanado.copy())
-            post_gol_restante_A -= 1
-            if post_gol_restante_A == 0:
-                nombre = f"grabacion{contador_A}A.mp4"
-                out = cv2.VideoWriter(nombre, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (WIDTH, HEIGHT))
-                for f in buffer_frames: out.write(f)
-                for f in frames_post_A: out.write(f)
-                out.release()
-                contador_A += 1
-                frames_post_A.clear()
+            if post_gol_restante_A > 0:
+                frames_post_A.append(frame_aplanado.copy())
+                post_gol_restante_A -= 1
+                if post_gol_restante_A == 0:
+                    try:
+                        nombre = f"var/grabacion{contador_A}A.mp4"
+                        out = cv2.VideoWriter(nombre, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (WIDTH, HEIGHT))
+                        for f in buffer_frames: out.write(f)
+                        for f in frames_post_A: out.write(f)
+                        out.release()
+                        print(f"Grabado gol A: {nombre}")
+                        contador_A += 1
+                    finally:
+                        frames_post_A.clear()
 
-        if post_gol_restante_B > 0:
-            frames_post_B.append(frame_aplanado.copy())
-            post_gol_restante_B -= 1
-            if post_gol_restante_B == 0:
-                nombre = f"grabacion{contador_B}B.mp4"
-                out = cv2.VideoWriter(nombre, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (WIDTH, HEIGHT))
-                for f in buffer_frames: out.write(f)
-                for f in frames_post_B: out.write(f)
-                out.release()
-                contador_B += 1
-                frames_post_B.clear()
+            if post_gol_restante_B > 0:
+                frames_post_B.append(frame_aplanado.copy())
+                post_gol_restante_B -= 1
+                if post_gol_restante_B == 0:
+                    try:
+                        nombre = f"var/grabacion{contador_B}B.mp4"
+                        out = cv2.VideoWriter(nombre, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (WIDTH, HEIGHT))
+                        for f in buffer_frames: out.write(f)
+                        for f in frames_post_B: out.write(f)
+                        out.release()
+                        print(f"Grabado gol B: {nombre}")
+                        contador_B += 1
+                    finally:
+                        frames_post_B.clear()
 
-        cv2.imshow("VAR", frame_aplanado)
-        cv2.imshow("Pelota Limpia", mask_clean)
-        frame_actual += 1
+            try:
+                cv2.imshow("VAR", frame_aplanado)
+                cv2.imshow("Pelota Limpia", mask_clean)
+            except cv2.error as e:
+                print("Error en imshow:", e)
+                break
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
+            frame_actual += 1
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
