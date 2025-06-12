@@ -119,10 +119,13 @@ def main():
             pred_x, pred_y = int(prediccion[0]), int(prediccion[1])
             pelota_actual = (pred_x, pred_y)
 
-            cv2.circle(frame_aplanado, pelota_actual, 10, (0, 0, 255), -1)
-            estela.appendleft(pelota_actual)
+            if detectado:
+                cv2.circle(frame_aplanado, pelota_actual, 10, (0, 0, 255), -1)
+                estela.appendleft(pelota_actual)
+            else:
+                estela.appendleft(None)
             for i in range(1, len(estela)):
-                if estela[i - 1] and estela[i]:
+                if estela[i - 1] is not None and estela[i] is not None:
                     cv2.line(frame_aplanado, estela[i - 1], estela[i], (0, 255, 255), 2)
 
             if pelota_anterior:
@@ -173,7 +176,7 @@ def main():
 
             try:
                 cv2.imshow("VAR", frame_aplanado)
-                cv2.imshow("Pelota Limpia", mask_clean)
+                #cv2.imshow("Pelota Limpia", mask_clean)
             except cv2.error as e:
                 print("Error en imshow:", e)
                 break
