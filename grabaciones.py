@@ -19,7 +19,8 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
         self.cap = None
         self.running = False
         self.paused = False
-        self.velocidad = 1.0  # Velocidad inicial 
+        self.cap_lock = threading.Lock()
+        self.velocidad = 1.0
 
         self.label = customtkinter.CTkLabel(self, text="Selecciona la carpeta de grabaciones", font=("Arial", 16))
         self.label.pack(pady=10)
@@ -31,6 +32,8 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
         self.video_frame.pack(pady=10)
         self.video_label = customtkinter.CTkLabel(self.video_frame, text="")
         self.video_label.pack()
+        self.nombre_video_label = customtkinter.CTkLabel(self, text="", font=("Arial", 14))
+        self.nombre_video_label.pack(pady=5)
 
         controles_frame = customtkinter.CTkFrame(self)
         controles_frame.pack(pady=5)
@@ -55,8 +58,11 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
         if ruta:
             self.var_folder = ruta
             self.mostrar_videos()
-    
+
     def cerrar_ventana(self):
+        self.running = False
+        if self.video_thread and self.video_thread.is_alive():
+            self.video_thread.join(timeout=2)
         self.cerrar_video()
         self.destroy()
 
@@ -110,33 +116,52 @@ class VentanaGrabaciones(customtkinter.CTkToplevel):
 
     def reproducir_video(self, ruta_video):
         self.cerrar_video()
+        if self.video_thread and self.video_thread.is_alive():
+            self.video_thread.join(timeout=2)
+
         self.cap = cv2.VideoCapture(ruta_video)
         self.running = True
         self.paused = False
         self.boton_pausa.configure(text="Pausar")
+        nombre = os.path.basename(ruta_video)
+        self.nombre_video_label.configure(text=f"Reproduciendo: {nombre}")
         self.video_thread = threading.Thread(target=self.actualizar_frame, daemon=True)
         self.video_thread.start()
 
     def actualizar_frame(self):
-        while self.running and self.cap and self.cap.isOpened():
-            if not self.paused:
-                ret, frame = self.cap.read()
-                if not ret:
-                    break
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame = cv2.resize(frame, (640, 360))
-                img = Image.fromarray(frame)
-                img_tk = customtkinter.CTkImage(light_image=img, dark_image=img, size=(640, 360))
-                self.video_label.configure(image=img_tk)
-                self.video_label.image = img_tk
-                self.update_idletasks()
-            time.sleep(1 / (30 * self.velocidad))  
+        while self.running:
+            if self.cap_lock.acquire(timeout=1):
+                try:
+                    if not self.cap or not self.cap.isOpened():
+                        break
+                    if not self.paused:
+                        ret, frame = self.cap.read()
+                        if not ret:
+                            break
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        frame = cv2.resize(frame, (640, 360))
+                        img = Image.fromarray(frame)
+                        img_tk = customtkinter.CTkImage(light_image=img, dark_image=img, size=(640, 360))
+                        try:
+                            if self.video_label.winfo_exists():
+                                self.video_label.configure(image=img_tk)
+                                self.video_label.image = img_tk
+                        except:
+                            break
+                        self.update_idletasks()
+                finally:
+                    self.cap_lock.release()
+            time.sleep(1 / (30 * self.velocidad))
 
     def cerrar_video(self):
         self.running = False
-        if self.cap:
-            self.cap.release()
-            self.cap = None
+        if self.cap_lock.acquire(timeout=1):
+            try:
+                if self.cap:
+                    self.cap.release()
+                    self.cap = None
+            finally:
+                self.cap_lock.release()
 
     def toggle_pausa(self):
         self.paused = not self.paused
