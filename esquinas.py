@@ -30,7 +30,7 @@ class VentanaEsquinas(customtkinter.CTkToplevel):
 
         self.guia = cv2.imread("guia.png")
         if self.guia is not None:
-            self.guia = cv2.resize(self.guia, (200, 150))
+            self.guia = cv2.resize(self.guia, (300, 250))
         else:
             print("No se pudo cargar la guía 'guia.png'")
 

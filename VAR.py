@@ -2,61 +2,26 @@ import cv2
 import numpy as np
 from collections import deque
 import threading
-import os
-from playsound import playsound
+import pygame
 
 WIDTH, HEIGHT = 800, 400
 FPS = 25
-DURACION = 10 #segundos de duracion
+DURACION = 10
 FRAMES_UMBRAL = FPS * DURACION
 FRAMES_EXTRA = 3 * FPS
 VIDEO_PATH = "rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2"
 SONIDO_GOL = "C:/Users/pablo/OneDrive/Escritorio/Yo/fut/gol.mp3"
 
-
-def punto_cruza_linea(punto, p1, p2):
-    A, B, P = np.array(p1), np.array(p2), np.array(punto)
-    AB, AP = B - A, P - A
-    return np.cross(AB, AP) > 0
-
 def reproducir_sonido():
-    threading.Thread(target=playsound, args=(SONIDO_GOL,), daemon=True).start()
+    pygame.mixer.init()
+    pygame.mixer.music.load("gol.mp3")
+    pygame.mixer.music.play()
 
-# ---------------------------- Deteccion de LEDS ---------------------------- #
-def detectar_leds(frame, M, max_verde=1, max_rojo=1):
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    mask_hsv = cv2.inRange(hsv, (0, 76, 90), (179, 255, 255))
-    result = cv2.bitwise_and(frame, frame, mask=mask_hsv)
-    blur = cv2.GaussianBlur(result, (9, 9), 0)
-    kernel = np.ones((5,5), np.uint8)
-    limpieza = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)
-    limpieza_rgb = cv2.cvtColor(limpieza, cv2.COLOR_BGR2RGB)
+def cruzo_linea(punto_actual, punto_anterior, p1, p2):
+    def ccw(A, B, C):
+        return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
+    return (ccw(punto_anterior, p1, p2) != ccw(punto_actual, p1, p2)) and (ccw(punto_anterior, punto_actual, p1) != ccw(punto_anterior, punto_actual, p2))
 
-    leds_detectados = []
-
-    # Verde
-    verde_mask = cv2.inRange(limpieza_rgb, (0, 138, 0), (104, 255, 150))
-    contornos, _ = cv2.findContours(verde_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for cnt in sorted(contornos, key=cv2.contourArea, reverse=True)[:max_verde]:
-        if cv2.contourArea(cnt) < 50: continue
-        x,y,w,h = cv2.boundingRect(cnt)
-        centro = np.array([[[x+w//2, y+h//2]]], dtype='float32')
-        proyectado = cv2.perspectiveTransform(centro, M)[0][0]
-        leds_detectados.append(("verde", proyectado))
-
-    # Rojo
-    rojo_mask = cv2.inRange(limpieza_rgb, (215, 86, 0), (255, 140, 180))
-    contornos, _ = cv2.findContours(rojo_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for cnt in sorted(contornos, key=cv2.contourArea, reverse=True)[:max_rojo]:
-        if cv2.contourArea(cnt) < 50: continue
-        x,y,w,h = cv2.boundingRect(cnt)
-        centro = np.array([[[x+w//2, y+h//2]]], dtype='float32')
-        proyectado = cv2.perspectiveTransform(centro, M)[0][0]
-        leds_detectados.append(("rojo", proyectado))
-
-    return leds_detectados
-
-# ---------------------------- Tracker Pelota ---------------------------- #
 def detectar_pelota(frame_aplanado, kernel):
     hsv = cv2.cvtColor(frame_aplanado, cv2.COLOR_BGR2HSV)
     mask1 = cv2.inRange(hsv, (0, 76, 90), (179, 255, 255))
@@ -78,17 +43,6 @@ def detectar_pelota(frame_aplanado, kernel):
             return centro, int(radio), clean
     return None, 0, clean
 
-# ---------------------------- Gooooooooool ---------------------------- #
-def chequear_gol(centro, porteria_pts, lado_anterior, frame_actual, ultimo_gol, umbral, post_frames, buffer, contador, etiqueta):
-    lado_actual = punto_cruza_linea(centro, *porteria_pts)
-    if lado_anterior is not None and lado_actual != lado_anterior:
-        if frame_actual - ultimo_gol >= umbral:
-            print(f"¡GOL en Portería {etiqueta}!")
-            reproducir_sonido()
-            return True, frame_actual, lado_actual
-    return False, ultimo_gol, lado_actual
-
-# ---------------------------- MAIN ---------------------------- #
 def main():
     cap = cv2.VideoCapture(VIDEO_PATH)
     if not cap.isOpened():
@@ -109,42 +63,37 @@ def main():
     contador_A = contador_B = 1
     ultimo_gol_A = ultimo_gol_B = -FRAMES_UMBRAL
     post_gol_restante_A = post_gol_restante_B = 0
-    lado_anterior_A = lado_anterior_B = None
     frames_post_A = []
     frames_post_B = []
+    pelota_anterior = None
 
     while True:
         ret, frame = cap.read()
         if not ret: continue
         frame_aplanado = cv2.warpPerspective(frame, M, (WIDTH, HEIGHT))
 
-        # Dibujar porterias
         cv2.line(frame_aplanado, p1_A, p2_A, (0,255,0), 2)
         cv2.line(frame_aplanado, p1_B, p2_B, (255,0,0), 2)
 
-        # LEDs
-        leds = detectar_leds(frame, M)
-        for tipo, pos in leds:
-            color = (0,255,0) if tipo == "verde" else (0,0,255)
-            cv2.rectangle(frame_aplanado, (int(pos[0]-5), int(pos[1]-5)), (int(pos[0]+5), int(pos[1]+5)), color, -1)
-
-        # Pelota
         centro, radio, mask_clean = detectar_pelota(frame_aplanado, kernel)
         if centro:
             cv2.circle(frame_aplanado, centro, radio, (0,255,0), 2)
             cv2.circle(frame_aplanado, centro, 3, (0,0,255), -1)
 
-            gol_A, ultimo_gol_A, lado_anterior_A = chequear_gol(
-                centro, (p1_A, p2_A), lado_anterior_A, frame_actual, ultimo_gol_A,
-                FRAMES_UMBRAL, FRAMES_EXTRA, buffer_frames, contador_A, "A"
-            )
-            if gol_A: post_gol_restante_A = FRAMES_EXTRA
+            if pelota_anterior:
+                if cruzo_linea(centro, pelota_anterior, p1_A, p2_A) and frame_actual - ultimo_gol_A >= FRAMES_UMBRAL:
+                    print("¡GOL en Portería A!")
+                    reproducir_sonido()
+                    post_gol_restante_A = FRAMES_EXTRA
+                    ultimo_gol_A = frame_actual
 
-            gol_B, ultimo_gol_B, lado_anterior_B = chequear_gol(
-                centro, (p1_B, p2_B), lado_anterior_B, frame_actual, ultimo_gol_B,
-                FRAMES_UMBRAL, FRAMES_EXTRA, buffer_frames, contador_B, "B"
-            )
-            if gol_B: post_gol_restante_B = FRAMES_EXTRA
+                if cruzo_linea(centro, pelota_anterior, p1_B, p2_B) and frame_actual - ultimo_gol_B >= FRAMES_UMBRAL:
+                    print("¡GOL en Portería B!")
+                    reproducir_sonido()
+                    post_gol_restante_B = FRAMES_EXTRA
+                    ultimo_gol_B = frame_actual
+
+            pelota_anterior = centro
 
         buffer_frames.append(frame_aplanado.copy())
 
@@ -171,7 +120,6 @@ def main():
                 out.release()
                 contador_B += 1
                 frames_post_B.clear()
-
 
         cv2.imshow("VAR", frame_aplanado)
         cv2.imshow("Pelota Limpia", mask_clean)
