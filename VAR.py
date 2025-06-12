@@ -3,6 +3,7 @@ import numpy as np
 from collections import deque
 import pygame
 import os
+import datetime
 
 WIDTH, HEIGHT = 800, 400
 FPS = 25
@@ -134,12 +135,14 @@ def main():
                     reproducir_sonido()
                     post_gol_restante_A = FRAMES_EXTRA
                     ultimo_gol_A = frame_actual
+                    contador_A += 1
 
                 if cruzo_linea(pelota_actual, pelota_anterior, p1_B, p2_B) and frame_actual - ultimo_gol_B >= FRAMES_UMBRAL:
                     print("¡GOL en Portería B!")
                     reproducir_sonido()
                     post_gol_restante_B = FRAMES_EXTRA
                     ultimo_gol_B = frame_actual
+                    contador_B += 1
 
             pelota_anterior = pelota_actual
             buffer_frames.append(frame_aplanado.copy())
@@ -149,13 +152,17 @@ def main():
                 post_gol_restante_A -= 1
                 if post_gol_restante_A == 0:
                     try:
-                        nombre = f"var/grabacion{contador_A}A.mp4"
+                        ahora = datetime.datetime.now().strftime("%H-%M-%S")
+                        nombre = f"var/grabacionA_{ahora}.mp4"
+
                         out = cv2.VideoWriter(nombre, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (WIDTH, HEIGHT))
-                        for f in buffer_frames: out.write(f)
-                        for f in frames_post_A: out.write(f)
+                        for f in buffer_frames:
+                            out.write(f)
+                        for f in frames_post_A:
+                            out.write(f)
                         out.release()
+
                         print(f"Grabado gol A: {nombre}")
-                        contador_A += 1
                     finally:
                         frames_post_A.clear()
 
@@ -164,17 +171,24 @@ def main():
                 post_gol_restante_B -= 1
                 if post_gol_restante_B == 0:
                     try:
-                        nombre = f"var/grabacion{contador_B}B.mp4"
+                        ahora = datetime.datetime.now().strftime("%H-%M-%S")
+                        nombre = f"var/grabacionB_{ahora}.mp4"
+
                         out = cv2.VideoWriter(nombre, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (WIDTH, HEIGHT))
-                        for f in buffer_frames: out.write(f)
-                        for f in frames_post_B: out.write(f)
+                        for f in buffer_frames:
+                            out.write(f)
+                        for f in frames_post_B:
+                            out.write(f)
                         out.release()
+
                         print(f"Grabado gol B: {nombre}")
-                        contador_B += 1
                     finally:
                         frames_post_B.clear()
 
+
             try:
+                cv2.putText(frame_aplanado, f"Goles A: {contador_A-1}", (10, 50),cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                cv2.putText(frame_aplanado, f"Goles B: {contador_B-1}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
                 cv2.imshow("VAR", frame_aplanado)
                 #cv2.imshow("Pelota Limpia", mask_clean)
             except cv2.error as e:
