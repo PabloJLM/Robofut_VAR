@@ -10,7 +10,7 @@ DURACION = 10
 FRAMES_UMBRAL = FPS * DURACION
 FRAMES_EXTRA = 3 * FPS
 VIDEO_PATH = "rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2"
-SONIDO_GOL = "C:/Users/pablo/OneDrive/Escritorio/Yo/fut/gol.mp3"
+
 
 def reproducir_sonido():
     pygame.mixer.init()
