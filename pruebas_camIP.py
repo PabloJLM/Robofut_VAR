@@ -1,7 +1,5 @@
 import cv2
 
-
-
 link = "rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2"
 cap = cv2.VideoCapture(link)
 

@@ -3,7 +3,7 @@ import numpy as np
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
-RTSP_URL = "rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2"
+camara_ip = "rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2"
 
 class Principal:
     def __init__(self, root):
@@ -17,7 +17,6 @@ class Principal:
         self.labels = {}
         self.entries = {}
 
-        # Rango de valores RGB
         values = {
             "R Min": (0, 255),
             "R Max": (0, 255),
@@ -42,7 +41,6 @@ class Principal:
             self.entries[name].insert(0, str(int(self.sliders[name].get())))
             self.entries[name].bind("<Return>", self.update_from_entry)
 
-        # Valores por defecto
         self.sliders["R Min"].set(0)
         self.sliders["R Max"].set(255)
         self.sliders["G Min"].set(0)
@@ -53,7 +51,7 @@ class Principal:
         self.image_label = ctk.CTkLabel(root, text="")
         self.image_label.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
 
-        self.cap = cv2.VideoCapture(RTSP_URL)
+        self.cap = cv2.VideoCapture(camara_ip)
         if not self.cap.isOpened():
             print("Error: No se pudo conectar a la cámara IP")
 
@@ -85,7 +83,6 @@ class Principal:
         if ret:
             frame = cv2.resize(frame, (self.frame_width, self.frame_height))
 
-            # 1. Limpieza en HSV
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             low_hsv = np.array([0, 76, 90])
             up_hsv = np.array([179, 255, 255])
@@ -96,7 +93,6 @@ class Principal:
             kernel = np.ones((5, 5), np.uint8)
             limpieza = cv2.morphologyEx(blurred, cv2.MORPH_OPEN, kernel)
 
-            # 2. Aplicar máscara en RGB sobre imagen limpia
             limpieza_rgb = cv2.cvtColor(limpieza, cv2.COLOR_BGR2RGB)
 
             lower_rgb = np.array([

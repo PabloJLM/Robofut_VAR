@@ -3,7 +3,7 @@ import numpy as np
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
-RTSP_URL = "rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2"
+camara_ip = "rtsp://PabloJ1012:PabloJ1012@192.168.1.109:554/stream2" #cambiar por la camara o ip que sea
 
 class Principal:
     def __init__(self, root):
@@ -51,7 +51,7 @@ class Principal:
         self.image_label = ctk.CTkLabel(root, text="")
         self.image_label.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
 
-        self.cap = cv2.VideoCapture(RTSP_URL)
+        self.cap = cv2.VideoCapture(camara_ip)
         if not self.cap.isOpened():
             print("Error: No se pudo conectar a la cámara IP")
 

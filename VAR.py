@@ -40,7 +40,7 @@ def detectar_pelota(frame_aplanado, kernel):
         perim = cv2.arcLength(cnt, True)
         if perim == 0: continue
         circularidad = 4 * np.pi * (area / (perim ** 2))
-        if circularidad > 0.85:
+        if circularidad > 0.87:
             (x, y), radio = cv2.minEnclosingCircle(cnt)
             return (int(x), int(y)), int(radio), clean
     return None, 0, clean
@@ -187,8 +187,8 @@ def main():
 
 
             try:
-                cv2.putText(frame_aplanado, f"Goles A: {contador_A-1}", (10, 50),cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                cv2.putText(frame_aplanado, f"Goles B: {contador_B-1}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+               # cv2.putText(frame_aplanado, f"Goles A: {contador_A-1}", (10, 50),cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+               # cv2.putText(frame_aplanado, f"Goles B: {contador_B-1}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
                 cv2.imshow("VAR", frame_aplanado)
                 #cv2.imshow("Pelota Limpia", mask_clean)
             except cv2.error as e:
