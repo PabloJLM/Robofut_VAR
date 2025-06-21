@@ -3,5 +3,6 @@
   <img src="https://img.shields.io/badge/python-3.10+-blue?logo=python">
   <img src="https://img.shields.io/badge/OpenCV-enabled-green?logo=opencv">
   <img src="https://img.shields.io/badge/CustomTkinter-GUI-blueviolet">
-  <img src="https://img.shields.io/badge/Proyecto-BALAM-important?style=flat-square">
+  <img src="https://img.shields.io/badge/pygame-enabled-brightgreen?style=flat-square">
+
 </p>
