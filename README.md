@@ -73,6 +73,14 @@ Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python pa
 ## Reproduccion del VAR
 ![Image](https://github.com/user-attachments/assets/11bb0025-9e61-496c-8501-12283f4b3120)<!-- ventana de grabaciones reproduccion -->
 
+## Requisitos
+- Python 3.10+
+- OpenCV
+- customtkinter
+- pygame
+- numpy
+- PIL (Pillow)
+
 ## Cómo ejecutar
 
 1. Clona el repositorio:
@@ -91,3 +99,25 @@ Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python pa
 4. Ejecuta el programa principal
    ```bash
    python main.py
+
+## Estructura del Proyecto
+``` 
+Robofut_VAR/
+├── main.py              # Script principal
+├── aplanar.py           # Usa las coordenadas y realiza la homografía
+├── calibrador_hsv.py    # Programa para calibrar las máscaras usando HSV
+├── esquinas.npy         # Coordenadas para homografía
+├── esquinas.py          # Programa para seleccionar las esquinas
+├── grabaciones.py       # Programa para ver las grabaciones
+├── porterias.npy        # Coordenadas de porterías
+├── porterias.py         # Programa para seleccionar porterías
+├── pruebas.py           # Programa para debuggear y probar la GUI principal
+├── pruebas_camIP.py     # Programa para probar la cámara IP
+├── var/                 # Carpeta donde se guardan las repeticiones
+└── ...
+``` 
+## Creditos
+Este proyecto fue desarrollado por [Pablo López](https://github.com/PabloJLM) para el Encuentro Nacional de Robótica **BALAM** 🇬🇹.
+
+## Licencia
+Este proyecto está bajo la [MIT License](LICENSE).
