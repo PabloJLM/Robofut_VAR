@@ -15,11 +15,12 @@
 ## ¿En que consiste el proyecto?
 
 Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python para **RoboFut**, un torneo de futbol de robots a control remoto. Fue creado para el Encuentro Nacional de Robótica **BALAM** 🇬🇹.
+![Image](https://github.com/user-attachments/assets/b27297fb-b363-437e-a147-4c916e009d0b) <!-- logo -->
 
 > ⚠️ Todo el proyecto es **open source**, con el objetivo de apoyar la robótica educativa y fomentar el aprendizaje de visión por computadora.
 
 ---
-![Image](https://github.com/user-attachments/assets/b27297fb-b363-437e-a147-4c916e009d0b) <!-- logo -->
+
 
 ## Funcionalidades destacadas
 
