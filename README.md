@@ -41,6 +41,8 @@ Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python pa
           ↓
 [Selección de Esquinas]
           ↓
+[Selección de porterías]
+          ↓
 [Transformación de Perspectiva]
           ↓
 [Tracking de Pelota (HSV + filtros)]
@@ -52,6 +54,7 @@ Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python pa
 [Reproducción de sonido + grabación del gol]
           ↓
 [GUI + Reproductor de videos]
+
 ```
 
 
