@@ -120,6 +120,10 @@ Robofut_VAR/
 ├── var/                 # Carpeta donde se guardan las repeticiones
 └── ...
 ``` 
+
+## Agradecimientos
+Este proyecto fue posible gracias al apoyo del equipo del Proyecto BALAM, al Dr. Óscar Rodas por su guía, y a la Universidad, por facilitar los recursos técnicos necesarios para su desarrollo.
+
 ## Créditos
 Este proyecto fue desarrollado por [Pablo Jose López Mazariegos](https://github.com/PabloJLM) para el Encuentro Nacional de Robótica **BALAM** 🇬🇹.
 
