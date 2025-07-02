@@ -7,14 +7,14 @@
 
 </p>
 
-## Demostracion
+## Demostración
 ![Image](https://github.com/user-attachments/assets/9b55d269-9c47-4312-b132-66a86fe4087b) <!-- GIF funcionamiento-->
 
 ---
 
-## ¿En que consiste el proyecto?
+## ¿En qué consiste el proyecto?
 
-Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python para **RoboFut**, un torneo de futbol de robots a control remoto. Fue creado para el Encuentro Nacional de Robótica **BALAM** 🇬🇹.
+Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python para **RoboFut**, un torneo de fútbol de robots a control remoto. Fue creado para el Encuentro Nacional de Robótica **BALAM** 🇬🇹.
 ![Image](https://github.com/user-attachments/assets/b27297fb-b363-437e-a147-4c916e009d0b) <!-- logo -->
 
 > ⚠️ Todo el proyecto es **open source**, con el objetivo de apoyar la robótica educativa y fomentar el aprendizaje de visión por computadora.
@@ -24,36 +24,36 @@ Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python pa
 
 ## Funcionalidades destacadas
 
-| Característica | Descripción |
-|----------------|-------------|
-| RTSP Streaming | Se usaron cámaras IP, modelo TAPO C200 |
-| Aplanado de campo | Selección de esquinas + `cv2.getPerspectiveTransform` |
-| Detección de pelota | HSV + morfología + circularity + Filtro de Kalman  |
-| Gol automático | Detecta cruce de línea definida como portería |
-| Grabación automatica | Guarda 10s antes y 3s después del gol |
-| GUI Interactiva | CustomTkinter para configuración y visualización |
-| Librería de Repeticiones | Miniaturas + reproductor integrado con control de velocidad |
+| Característica         | Descripción                                                |
+|------------------------|------------------------------------------------------------|
+| RTSP Streaming         | Se usaron cámaras IP, modelo TAPO C200                     |
+| Aplanado de campo      | Selección de esquinas + `cv2.getPerspectiveTransform`      |
+| Detección de pelota    | HSV + morfología + circularidad + Filtro de Kalman         |
+| Gol automático         | Detecta cruce de línea definida como portería              |
+| Grabación automática   | Guarda 10 s antes y 3 s después del gol                    |
+| GUI interactiva        | CustomTkinter para configuración y visualización           |
+| Librería de repeticiones | Miniaturas + reproductor integrado con control de velocidad |
 
 ---
 ## Pipeline del sistema
 ```text
 [Cámara RTSP]
           ↓
-[Selección de Esquinas]
+[Selección de esquinas]
           ↓
 [Selección de porterías]
           ↓
-[Transformación de Perspectiva]
+[Transformación de perspectiva]
           ↓
-[Tracking de Pelota (HSV + filtros)]
+[Tracking de pelota (HSV + filtros)]
           ↓
-[Kalman Filter + Estela]
+[Kalman Filter + estela]
           ↓
 [Verificación de GOL (cruce de línea)]
           ↓
 [Reproducción de sonido + grabación del gol]
           ↓
-[GUI + Reproductor de videos]
+[GUI + reproductor de videos]
 
 ```
 
@@ -68,13 +68,13 @@ Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python pa
 ## Ventana del VAR
 ![Image](https://github.com/user-attachments/assets/be93450e-ef38-4c85-8a28-2fa92ef9f96b) <!-- VAR -->
 
-## Ventana de seleccion del campo
+## Ventana de selección del campo
 ![Image](https://github.com/user-attachments/assets/590cc546-e505-47cc-b7f7-5aa4b74929fe) <!-- Seleccion del campo-->
 
 ## Ventana de grabaciones
 ![Image](https://github.com/user-attachments/assets/6fdb605c-1040-40e0-b903-b19aafb61a49) <!-- ventana de grabaciones -->
 
-## Reproduccion del VAR
+## Reproducción del VAR
 ![Image](https://github.com/user-attachments/assets/11bb0025-9e61-496c-8501-12283f4b3120)<!-- ventana de grabaciones reproduccion -->
 
 ## Requisitos
@@ -96,7 +96,7 @@ Es un **sistema de videoarbitraje automatizado** (VAR) desarrollado en Python pa
    ```bash
    pip install -r paquetes.txt
    
-3. Prueba la conexion a la camara con pruebas_camIP.py usando:
+3. Prueba la conexión a la cámara con pruebas_camIP.py usando:
    ```bash
    python pruebas_camIP.py
    
@@ -115,13 +115,13 @@ Robofut_VAR/
 ├── grabaciones.py       # Programa para ver las grabaciones
 ├── porterias.npy        # Coordenadas de porterías
 ├── porterias.py         # Programa para seleccionar porterías
-├── pruebas.py           # Programa para debuggear y probar la GUI principal
+├── pruebas.py           # Programa para depurar y probar la GUI principal
 ├── pruebas_camIP.py     # Programa para probar la cámara IP
 ├── var/                 # Carpeta donde se guardan las repeticiones
 └── ...
 ``` 
-## Creditos
-Este proyecto fue desarrollado por [Pablo López](https://github.com/PabloJLM) para el Encuentro Nacional de Robótica **BALAM** 🇬🇹.
+## Créditos
+Este proyecto fue desarrollado por [Pablo Jose López Mazariegos](https://github.com/PabloJLM) para el Encuentro Nacional de Robótica **BALAM** 🇬🇹.
 
 ## Licencia
 Este proyecto está bajo la [MIT License](LICENSE).
